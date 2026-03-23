@@ -426,3 +426,43 @@ plt.tight_layout()
 plt.savefig(f"{PLOTS_DIR}/07_model_comparison.png", dpi=150, bbox_inches="tight")
 plt.close()
 print("Saved: 07_model_comparison.png")
+
+print("\n[4.7] ROC Curves Plot by Model: ")
+fig, ax = plt.subplots(figsize=(8, 6))
+
+RocCurveDisplay.from_estimator(log_reg_model,  X_test_scaled, y_test, ax=ax, name="Logistic Regression")
+RocCurveDisplay.from_estimator(svm_model,  X_test_scaled, y_test, ax=ax, name="SVM")
+RocCurveDisplay.from_estimator(rand_for_model, X_test_raw, y_test, ax=ax, name="Random Forest")
+RocCurveDisplay.from_estimator(xgb_model, X_test_raw, y_test, ax=ax, name="XGBoost")
+
+ax.plot([0, 1], [0, 1], "k--", label="Random Classifier")
+ax.set_title("ROC Curves - All Models", fontweight="bold", fontsize=12)
+ax.legend(loc="lower right")
+plt.tight_layout()
+plt.savefig(f"{PLOTS_DIR}/08_roc_curves.png", dpi=150, bbox_inches="tight")
+plt.close()
+print("Saved: 08_roc_curves.png")
+
+
+print("\n[4.8] Confusion Matrices by Model: ")
+fig, axes = plt.subplots(1, 4, figsize=(18, 4))
+
+cm_data = [
+    ("Logistic Regression", log_reg_model, X_test_scaled, log_reg_pred),
+    ("SVM", svm_model, X_test_scaled, svm_pred),
+    ("Random Forest", rand_for_model, X_test_raw, rand_for_pred),
+    ("XGBoost", xgb_model, X_test_raw, xgb_pred)
+]
+
+for i, (name, model, X_test_m, Y_pred) in enumerate(cm_data):
+    cm   = confusion_matrix(y_test, Y_pred)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm,
+                                   display_labels=["No Disease", "Disease"])
+    disp.plot(ax=axes[i], colorbar=False, cmap="Blues")
+    axes[i].set_title(name, fontweight="bold", fontsize=10)
+
+plt.suptitle("Confusion Matrices", fontsize=14, fontweight="bold")
+plt.tight_layout()
+plt.savefig(f"{PLOTS_DIR}/09_confusion_matrices.png", dpi=150, bbox_inches="tight")
+plt.close()
+print("Saved: 09_confusion_matrices.png")
