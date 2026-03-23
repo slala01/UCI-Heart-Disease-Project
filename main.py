@@ -292,7 +292,7 @@ print(f"  X_train_scaled    shape : {X_train_raw.shape} → for LR, SVM")
 print(f"  X_test_scaled shape : {X_test_scaled.shape} → for LR, SVM")
 
 # =============================================================================
-# 4. Hyperparameter Tuning and Modeling
+# 4. Modeling and Performance Metrics
 # =============================================================================
 
 print("\n")
@@ -303,8 +303,6 @@ print("=" * 60)
 results = {}
 
 # Logistic Regression
-
-print("\n[4.1] Logistic Regression Model: ")
 
 log_reg_model = LogisticRegression(random_state=RANDOM_STATE, max_iter=1000)
 log_reg_model.fit(X_train_scaled, y_train)
@@ -318,13 +316,9 @@ results["Logistic Regression"] = {
     "F1 Score": f1_score(y_test, log_reg_pred)
 }
 
-print(f"  AUC-ROC     : {results['Logistic Regression']['AUC-ROC']}")
-print(f"  Accuracy    : {results['Logistic Regression']['Accuracy']}")
-print(f"  F1 Score    : {results['Logistic Regression']['F1 Score']}")
+print("\n[4.1] Logistic Regression Model..... Complete ✓")
 
 # Support Vector Machine (SVM)
-
-print("\n[4.2] SVM Model: ")
 
 svm_model = SVC(random_state=RANDOM_STATE, probability=True)
 svm_model.fit(X_train_scaled, y_train)
@@ -338,16 +332,26 @@ results["SVM"] = {
     "F1 Score": f1_score(y_test, svm_pred)
 }
 
-print(f"  AUC-ROC     : {results['SVM']['AUC-ROC']}")
-print(f"  Accuracy    : {results['SVM']['Accuracy']}")
-print(f"  F1 Score    : {results['SVM']['F1 Score']}")
+print("\n[4.2] SVM Model..... Complete ✓")
 
 # Random Forest
 
-print("\n[4.3] Random Forest Model: ")
+rand_for_grid = {
+    "n_estimators": [50, 100, 200, 300, 500],
+    "max_features": ["sqrt", "log2", "None"],
+    "max_depth": [3, 5, 10, None]
+}
 
-rand_for_model = RandomForestClassifier(random_state=RANDOM_STATE, n_estimators=1000)
-rand_for_model.fit(X_train_raw, y_train)
+rand_for_grid = GridSearchCV(
+    RandomForestClassifier(random_state=RANDOM_STATE), 
+    param_grid=rand_for_grid, 
+    scoring="roc_auc",
+    cv=5
+)
+
+rand_for_grid.fit(X_train_raw, y_train)
+
+rand_for_model = rand_for_grid.best_estimator_
 
 rand_for_pred = rand_for_model.predict(X_test_raw)
 rand_for_prob = rand_for_model.predict_proba(X_test_raw)[:, 1]
@@ -358,19 +362,30 @@ results["Random Forest"] = {
     "F1 Score": f1_score(y_test, rand_for_pred)
 }
 
-print(f"  AUC-ROC     : {results['Random Forest']['AUC-ROC']}")
-print(f"  Accuracy    : {results['Random Forest']['Accuracy']}")
-print(f"  F1 Score    : {results['Random Forest']['F1 Score']}")
+print("\n[4.3] Random Forest Model..... Complete ✓")
 
 # XGBoost
 
-print("\n[4.3] XGBoost Model: ")
+xgb_grid = {
+    "n_estimators": [50, 100, 200, 300, 500],
+    "learning_rate": [0.01, 0.03, 0.05, 0.1, 0.3, 0.5],
+    "max_depth": [3, 5, 7]
+}
 
-xgb_model = XGBClassifier(random_state=RANDOM_STATE)
-xgb_model.fit(X_train_raw, y_train)
+xgb_grid = GridSearchCV(
+    XGBClassifier(random_state=RANDOM_STATE), 
+    param_grid=xgb_grid, 
+    scoring="roc_auc",
+    cv=5
+)
+
+xgb_grid.fit(X_train_raw, y_train)
+
+xgb_model = xgb_grid.best_estimator_
 
 xgb_pred = xgb_model.predict(X_test_raw)
 xgb_prob = xgb_model.predict_proba(X_test_raw)[:, 1]
+
 
 results["XGBoost"] = {
     "AUC-ROC": roc_auc_score(y_test, xgb_prob),
@@ -378,6 +393,36 @@ results["XGBoost"] = {
     "F1 Score": f1_score(y_test, xgb_pred)
 }
 
-print(f"  AUC-ROC     : {results['XGBoost']['AUC-ROC']}")
-print(f"  Accuracy    : {results['XGBoost']['Accuracy']}")
-print(f"  F1 Score    : {results['XGBoost']['F1 Score']}")
+print("\n[4.4] XGBoost Model..... Complete ✓")
+
+print("\n[4.5] Performance Metrics: ")
+
+results_df = pd.DataFrame(results).T
+print(results_df.to_string())
+
+print("\n[4.6] Model Performance Comparison Plot: ")
+
+fig, axes = plt.subplots(1, 3, figsize=(15,5))
+
+perf_metrics = ["AUC-ROC", "Accuracy", "F1 Score"]
+perf_colors = ["green", "blue", "purple", "red"]
+
+for i, perf_metrics in enumerate(perf_metrics):
+    values = results_df[perf_metrics]
+    bars = axes[i].bar(results_df.index, values, color=perf_colors, edgecolor="black")
+    axes[i].set_title(perf_metrics, fontsize=12)
+    axes[i].set_ylabel("Score")
+    axes[i].set_xticklabels(results_df.index)
+    for bar, count in zip(bars, values):
+        axes[i].text(
+        bar.get_x() + bar.get_width() / 2,
+        bar.get_height() + 0.01,
+        round(count, 3),
+        ha="center"
+    )
+
+plt.suptitle("Model Performance Comparison")
+plt.tight_layout()
+plt.savefig(f"{PLOTS_DIR}/07_model_comparison.png", dpi=150, bbox_inches="tight")
+plt.close()
+print("Saved: 07_model_comparison.png")
