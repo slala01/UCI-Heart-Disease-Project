@@ -49,11 +49,11 @@ dataset = datasets.fetch_openml(data_id=46590,
 
 # Extract Target and Features
 X = dataset.data
-Y = dataset.target
+y = dataset.target
 
 # Combine into DataFrame
 df = X.copy()
-df["target"] = Y
+df["target"] = y
 
 # Dataset checks
 print(f"\n[1.1] Dataset loaded: {dataset.details['name']}")
@@ -263,7 +263,7 @@ df_engin = df_engin.drop(columns=["fasting_blood_sugar"])
 
 # Final Feature List
 X = df_engin.drop(columns=["target"])
-Y = df_engin["target"]
+y = df_engin["target"]
 
 print(f"\n[3.2] Final Feature List: ")
 for col in X.columns:
@@ -272,8 +272,8 @@ for col in X.columns:
 # Perform Train/Test split
 
 print("\n[3.3] Split raw data 80/20 for Random Tree and XGBoost Models :")
-X_train_raw, X_test_raw, Y_train, Y_test = train_test_split(
-    X, Y, test_size=0.20, random_state=RANDOM_STATE, stratify=Y
+X_train_raw, X_test_raw, y_train, y_test = train_test_split(
+    X, y, test_size=0.20, random_state=RANDOM_STATE, stratify=y
 )
 
 print(f"  X_train_raw    shape : {X_train_raw.shape} → for RF, XGBoost")
@@ -292,11 +292,92 @@ print(f"  X_train_scaled    shape : {X_train_raw.shape} → for LR, SVM")
 print(f"  X_test_scaled shape : {X_test_scaled.shape} → for LR, SVM")
 
 # =============================================================================
-# 4. Modeling and Performance Metrics
+# 4. Hyperparameter Tuning and Modeling
 # =============================================================================
 
 print("\n")
 print("=" * 60)
-print("4. Modeling and Performance Metrics")
+print("5. Modeling and Performance Metrics")
 print("=" * 60)
 
+results = {}
+
+# Logistic Regression
+
+print("\n[4.1] Logistic Regression Model: ")
+
+log_reg_model = LogisticRegression(random_state=RANDOM_STATE, max_iter=1000)
+log_reg_model.fit(X_train_scaled, y_train)
+
+log_reg_pred = log_reg_model.predict(X_test_scaled)
+log_reg_prob = log_reg_model.predict_proba(X_test_scaled)[:, 1]
+
+results["Logistic Regression"] = {
+    "AUC-ROC": roc_auc_score(y_test, log_reg_prob),
+    "Accuracy": accuracy_score(y_test, log_reg_pred),
+    "F1 Score": f1_score(y_test, log_reg_pred)
+}
+
+print(f"  AUC-ROC     : {results['Logistic Regression']['AUC-ROC']}")
+print(f"  Accuracy    : {results['Logistic Regression']['Accuracy']}")
+print(f"  F1 Score    : {results['Logistic Regression']['F1 Score']}")
+
+# Support Vector Machine (SVM)
+
+print("\n[4.2] SVM Model: ")
+
+svm_model = SVC(random_state=RANDOM_STATE, probability=True)
+svm_model.fit(X_train_scaled, y_train)
+
+svm_pred = svm_model.predict(X_test_scaled)
+svm_prob = svm_model.predict_proba(X_test_scaled)[:, 1]
+
+results["SVM"] = {
+    "AUC-ROC": roc_auc_score(y_test, svm_prob),
+    "Accuracy": accuracy_score(y_test, svm_pred),
+    "F1 Score": f1_score(y_test, svm_pred)
+}
+
+print(f"  AUC-ROC     : {results['SVM']['AUC-ROC']}")
+print(f"  Accuracy    : {results['SVM']['Accuracy']}")
+print(f"  F1 Score    : {results['SVM']['F1 Score']}")
+
+# Random Forest
+
+print("\n[4.3] Random Forest Model: ")
+
+rand_for_model = RandomForestClassifier(random_state=RANDOM_STATE, n_estimators=1000)
+rand_for_model.fit(X_train_raw, y_train)
+
+rand_for_pred = rand_for_model.predict(X_test_raw)
+rand_for_prob = rand_for_model.predict_proba(X_test_raw)[:, 1]
+
+results["Random Forest"] = {
+    "AUC-ROC": roc_auc_score(y_test, rand_for_prob),
+    "Accuracy": accuracy_score(y_test, rand_for_pred),
+    "F1 Score": f1_score(y_test, rand_for_pred)
+}
+
+print(f"  AUC-ROC     : {results['Random Forest']['AUC-ROC']}")
+print(f"  Accuracy    : {results['Random Forest']['Accuracy']}")
+print(f"  F1 Score    : {results['Random Forest']['F1 Score']}")
+
+# XGBoost
+
+print("\n[4.3] XGBoost Model: ")
+
+xgb_model = XGBClassifier(random_state=RANDOM_STATE)
+xgb_model.fit(X_train_raw, y_train)
+
+xgb_pred = xgb_model.predict(X_test_raw)
+xgb_prob = xgb_model.predict_proba(X_test_raw)[:, 1]
+
+results["XGBoost"] = {
+    "AUC-ROC": roc_auc_score(y_test, xgb_prob),
+    "Accuracy": accuracy_score(y_test, xgb_pred),
+    "F1 Score": f1_score(y_test, xgb_pred)
+}
+
+print(f"  AUC-ROC     : {results['XGBoost']['AUC-ROC']}")
+print(f"  Accuracy    : {results['XGBoost']['Accuracy']}")
+print(f"  F1 Score    : {results['XGBoost']['F1 Score']}")
