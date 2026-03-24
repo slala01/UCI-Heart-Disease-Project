@@ -20,6 +20,7 @@ from sklearn.metrics import (accuracy_score, roc_auc_score, f1_score, confusion_
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
+from sklearn.model_selection import learning_curve
 from scipy.stats import gaussian_kde
 from xgboost import XGBClassifier
 import shap
@@ -273,7 +274,7 @@ for col in X.columns:
 
 print("\n[3.3] Split raw data 80/20 for Random Tree and XGBoost Models :")
 X_train_raw, X_test_raw, y_train, y_test = train_test_split(
-    X, y, test_size=0.20, random_state=RANDOM_STATE, stratify=y
+    X, y, test_size=0.25, random_state=RANDOM_STATE, stratify=y
 )
 
 print(f"  X_train_raw    shape : {X_train_raw.shape} → for RF, XGBoost")
@@ -297,7 +298,7 @@ print(f"  X_test_scaled shape : {X_test_scaled.shape} → for LR, SVM")
 
 print("\n")
 print("=" * 60)
-print("5. Modeling and Performance Metrics")
+print("4. Modeling and Performance Metrics")
 print("=" * 60)
 
 results = {}
@@ -337,7 +338,7 @@ print("\n[4.2] SVM Model..... Complete ✓")
 # Random Forest
 
 rand_for_grid = {
-    "n_estimators": [50, 100, 200, 300, 500],
+    "n_estimators": [100, 300, 500],
     "max_features": ["sqrt", "log2", "None"],
     "max_depth": [3, 5, 10, None]
 }
@@ -367,8 +368,8 @@ print("\n[4.3] Random Forest Model..... Complete ✓")
 # XGBoost
 
 xgb_grid = {
-    "n_estimators": [50, 100, 200, 300, 500],
-    "learning_rate": [0.01, 0.03, 0.05, 0.1, 0.3, 0.5],
+    "n_estimators": [100, 300, 500],
+    "learning_rate": [0.01, 0.05, 0.1],
     "max_depth": [3, 5, 7]
 }
 
@@ -447,14 +448,14 @@ print("Saved: 08_roc_curves.png")
 print("\n[4.8] Confusion Matrices by Model: ")
 fig, axes = plt.subplots(1, 4, figsize=(18, 4))
 
-cm_data = [
+confus_df = [
     ("Logistic Regression", log_reg_model, X_test_scaled, log_reg_pred),
     ("SVM", svm_model, X_test_scaled, svm_pred),
     ("Random Forest", rand_for_model, X_test_raw, rand_for_pred),
     ("XGBoost", xgb_model, X_test_raw, xgb_pred)
 ]
 
-for i, (name, model, X_test_m, Y_pred) in enumerate(cm_data):
+for i, (name, model, X_test_m, Y_pred) in enumerate(confus_df):
     cm   = confusion_matrix(y_test, Y_pred)
     disp = ConfusionMatrixDisplay(confusion_matrix=cm,
                                    display_labels=["No Disease", "Disease"])
@@ -466,3 +467,53 @@ plt.tight_layout()
 plt.savefig(f"{PLOTS_DIR}/09_confusion_matrices.png", dpi=150, bbox_inches="tight")
 plt.close()
 print("Saved: 09_confusion_matrices.png")
+
+# =============================================================================
+# 5. Model Diagnostic
+# =============================================================================
+
+print("\n")
+print("=" * 60)
+print("5. Model Diagnostic")
+print("=" * 60)
+
+print("\n[5.1] Train vs Test AUC Gap: ")
+
+model_registry = {
+    "Logistic Regression": (log_reg_model,  X_train_scaled, X_test_scaled),
+    "SVM": (svm_model,  X_train_scaled,    X_test_scaled),
+    "Random Forest": (rand_for_model, X_train_raw,    X_test_raw),
+    "XGBoost": (xgb_model, X_train_raw, X_test_raw)
+}
+
+diagnostics = {}
+
+for name, (model, X_train_m, X_test_m) in model_registry.items():
+    train_auc = roc_auc_score(y_train,
+                               model.predict_proba(X_train_m)[:, 1])
+    test_auc  = roc_auc_score(y_test,
+                               model.predict_proba(X_test_m)[:, 1])
+    gap       = train_auc - test_auc
+
+    if gap > 0.10:
+        interpretation = "High Variance (Overfit)"
+    elif gap > 0:
+        interpretation = "Low Variance (Acceptable)"
+    elif gap < -0.10:
+        interpretation = "High Bias (Underfit)"
+    else:
+        interpretation = "Well Generalizing"
+
+    diagnostics[name] = {
+        "Train AUC"      : round(train_auc, 4),
+        "Test AUC"       : round(test_auc, 4),
+        "Gap"            : round(gap, 4),
+        "Interpretation" : interpretation
+    }
+
+print("\n  Diagnostics Summary Table:")
+print("-" * 60)
+diag_df = pd.DataFrame(diagnostics).T
+print(diag_df.to_string())
+diag_df.to_csv(f"{OUTPUT_DIR}/model_diagnostics.csv")
+print(f"\n Saved: model_diagnostics.csv")
