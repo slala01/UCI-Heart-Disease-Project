@@ -7,7 +7,8 @@ The objective of this project was to implement a Supervised Learning model to pr
 
 Due to the nature of the dataset and clinical question, Recall was an emphasis of optimization to ensure Fasle Negatives are minimized. The optimal model achieves a 0.90 Recall, 0.93 AUC-ROC, 0.88 Accuracy, and a 0.87 F1 Score.
 
-## Dataset
+## Dataset 
+| | |
 |---|---|
 | **Source** | UCI Machine Learning Repository |
 | **OpenML ID** | 46590 |
