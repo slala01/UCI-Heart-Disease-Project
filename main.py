@@ -500,20 +500,10 @@ for name, (model, X_train_m, X_test_m) in model_registry.items():
                                model.predict_proba(X_test_m)[:, 1])
     gap       = train_auc - test_auc
 
-    if gap > 0.10:
-        interpretation = "High Variance (Overfit)"
-    elif gap > 0:
-        interpretation = "Low Variance (Acceptable)"
-    elif gap < -0.10:
-        interpretation = "High Bias (Underfit)"
-    else:
-        interpretation = "Well Generalizing"
-
     diagnostics[name] = {
         "Train AUC"      : round(train_auc, 4),
         "Test AUC"       : round(test_auc, 4),
         "Gap"            : round(gap, 4),
-        "Interpretation" : interpretation
     }
 
 print("-" * 60)
