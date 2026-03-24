@@ -78,8 +78,3 @@ All gaps are no more than +/- 0.10. All models seem to be show no sigs of over/u
 Finally, a threshold swepp was conducted on all models to evaluate optimal classification cutoff. While all models were evaluated at the default threshold of 0.50, a threshold of 0.44 with the Random Forest model demonstrated the most optimal results of 0.90 Recall, 0.93 AUC-ROC, 0.88 Accuracy, and a 0.87 F1 Score. Interestingly, this threshold mirrors prevalence of the disease within our dataset (44.4%). This demonstrates the of role class imbalances within classification problems.
 
 ![Random Forest @ 0.44 Threshold](outputs/plots/08_random_forest_optimal_threshold.png)
-
-## References
-- Janosi, A., Steinbrunn, W., Pfisterer, M., & Detrano, R. (1989). Heart Disease [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C52P4X 
-- IBM. (2025). What Is Overfitting vs. Underfitting?. https://www.ibm.com/think/topics/overfitting-vs-underfitting
-- scikit-learn Developers. (2024). Classification Threshold — scikit-learn. Documentation. https://scikit-learn.org/stable/modules/classification_threshold.html
