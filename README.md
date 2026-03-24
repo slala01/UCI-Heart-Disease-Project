@@ -17,7 +17,7 @@ Due to the nature of the dataset and clinical question, Recall was an emphasis o
 | **Target** | Heart disease presence (0 = absent, 1 = present) |
 | **Class Distribution** | 55.6% No Disease / 44.4% Disease |
 
-**Citation**
+**Dataset Source**
 https://www.openml.org/search?type=data&status=active&id=46590&sort=runs
 
 ## Project Structure
@@ -87,6 +87,8 @@ The Train vs Test AUC Gaps were evaluated to check models fits
 All gaps are no more than +/- 0.10. All models seem to be show no sigs of over/underfitting.
 
 Finally, a threshold swepp was conducted on all models to evaluate optimal classification cutoff. While all models were evaluated at the default threshold of 0.50, a threshold of 0.44 with the Random Forest model demonstrated the most optimal results of 0.90 Recall, 0.93 AUC-ROC, 0.88 Accuracy, and a 0.87 F1 Score. Interestingly, this threshold mirrors prevalence of the disease within our dataset (44.4%). This demonstrates the of role class imbalances within classification problems.
+
+![Random Forest @ 0.44 Threshold](outputs/plots/08_random_forest_optimal_threshold.png)
 
 ## References
 - Janosi, A., Steinbrunn, W., Pfisterer, M., & Detrano, R. (1989). Heart Disease [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C52P4X 
