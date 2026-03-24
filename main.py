@@ -573,7 +573,7 @@ accuracy = accuracy_score(y_test, rand_for_pred_44)
 f1       = f1_score(y_test, rand_for_pred_44)
 
 axes[1].set_xlabel(
-    f"Recall: {recall:.4f}  |  F1: {f1:.4f}  |  Accuracy: {accuracy:.4f}"
+    f"Recall: {recall:.3f}  |  Accuracy: {accuracy:.3f}  |  F1: {f1:.3f}"
 )
 
 plt.suptitle("Random Forest: Optimal Threshold @ 0.44")
