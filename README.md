@@ -21,7 +21,7 @@ Due to the nature of the dataset and clinical question, Recall was an emphasis o
 https://www.openml.org/search?type=data&status=active&id=46590&sort=runs
 
 ## Project Structure
-UCI-Project/
+UCI-Heart-Disease-Project/
 ├── main.py                        
 ├── outputs/
 │   └── plots/
