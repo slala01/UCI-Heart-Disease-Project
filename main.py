@@ -548,7 +548,7 @@ fpr, tpr, thresholds_roc = roc_curve(y_test, rand_for_prob)
 auc_score = roc_auc_score(y_test, rand_for_prob)
 
 axes[0].plot(fpr, tpr, color="red", lw=2,
-              label=f"Random Forest (AUC = {auc_score})")
+              label=f"Random Forest (AUC = {auc_score:.3f})")
 axes[0].scatter(fpr[np.argmin(np.abs(thresholds_roc - 0.44))],
                  tpr[np.argmin(np.abs(thresholds_roc - 0.44))],
                  color="black", zorder=5, s=100,
@@ -566,6 +566,15 @@ disp = ConfusionMatrixDisplay(confusion_matrix=cm,
                                display_labels=["No Disease", "Disease"])
 disp.plot(ax=axes[1], colorbar=False, cmap="Blues")
 axes[1].set_title("Confusion Matrix: Random Forest @ 0.44 Threshold")
+
+# Performance Metrics
+recall   = recall_score(y_test, rand_for_pred_44)
+accuracy = accuracy_score(y_test, rand_for_pred_44)
+f1       = f1_score(y_test, rand_for_pred_44)
+
+axes[1].set_xlabel(
+    f"Recall: {recall:.4f}  |  F1: {f1:.4f}  |  Accuracy: {accuracy:.4f}"
+)
 
 plt.suptitle("Random Forest: Optimal Threshold @ 0.44")
 plt.tight_layout()
