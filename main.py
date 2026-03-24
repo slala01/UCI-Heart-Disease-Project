@@ -130,25 +130,17 @@ categorical_cols = ["sex", "chest", "fasting_blood_sugar",
 
 # Feature Variables
 
-# Plot info
-feat_NoDisease_color = "green"
-feat_Disease_color = "red"
-feat_edge_color = "black"
-feat_alpha = 0.5
-feat_bins = 20
-feat_labels = ["No Disease", "Disease"]
-
 # Bar plots
 fig, axes = plt.subplots(2, 3, figsize=(15, 8))
 axes = axes.flatten()
 for i, col in enumerate(numerical_cols):
-    axes[i].hist(df[df["target"] == 0][col], bins=feat_bins, alpha=feat_alpha,
-                 color=feat_NoDisease_color, label=feat_labels[0], edgecolor=feat_edge_color)
-    axes[i].hist(df[df["target"] == 1][col], bins=feat_bins, alpha=feat_alpha,
-                 color=feat_Disease_color, label=feat_labels[1], edgecolor=feat_edge_color)
-    # KDE lines - NOTE: Used LLM for this. Good to know for future!
+    axes[i].hist(df[df["target"] == 0][col], bins=20, alpha=0.5,
+                 color="green", label="No Disease", edgecolor="black")
+    axes[i].hist(df[df["target"] == 1][col], bins=20, alpha=0.5,
+                 color="red", label="Disease", edgecolor="black")
+    # KDE lines
     ax2 = axes[i].twinx()
-    for target, color in zip([0, 1], [feat_NoDisease_color, feat_Disease_color]):
+    for target, color in zip([0, 1], ["green", "red"]):
         vals = df[df["target"] == target][col].dropna()
         kde = gaussian_kde(vals)
         x_range = np.linspace(vals.min(), vals.max(), 200)
@@ -176,9 +168,9 @@ for i, col in enumerate(categorical_cols):
     x = np.arange(len(no_disease.index))
     width = 0.35
     axes[i].bar(x - width/2, no_disease.values, width,
-                label="No Disease", color="#2ecc71", edgecolor="black")
+                label="No Disease", color="green", edgecolor="black")
     axes[i].bar(x + width/2, disease.reindex(no_disease.index).fillna(0).values,
-                width, label="Disease", color="#e74c3c", edgecolor="black")
+                width, label="Disease", color="red", edgecolor="black")
     axes[i].set_title(col.replace("_", " ").title())
     axes[i].set_xticks(x)
     axes[i].set_xticklabels(no_disease.index.astype(int))
@@ -341,7 +333,6 @@ results["SVM"] = {
 print("\n[4.2] SVM Model..... Complete ✓")
 
 # Random Forest
-
 rand_for_grid = {
     "n_estimators": [100, 300, 500],
     "max_features": ["sqrt", "log2", "None"],
@@ -372,7 +363,6 @@ results["Random Forest"] = {
 print("\n[4.3] Random Forest Model..... Complete ✓")
 
 # XGBoost
-
 xgb_grid = {
     "n_estimators": [100, 300, 500],
     "learning_rate": [0.01, 0.05, 0.1],
@@ -403,6 +393,7 @@ results["XGBoost"] = {
 
 print("\n[4.4] XGBoost Model..... Complete ✓")
 
+# Performance Metrics
 print("\n[4.5] Performance Metrics: ")
 
 results_df = pd.DataFrame(results).T
@@ -436,6 +427,7 @@ plt.savefig(f"{PLOTS_DIR}/05_model_comparison.png", dpi=150, bbox_inches="tight"
 plt.close()
 print("\n[4.6] Saving Model Comparison plot as 05_model_comparison.png..... Complete ✓")
 
+# ROC Curves
 fig, ax = plt.subplots(figsize=(8, 6))
 
 RocCurveDisplay.from_estimator(log_reg_model,  X_test_scaled, y_test, ax=ax, name="Logistic Regression")
@@ -451,6 +443,7 @@ plt.savefig(f"{PLOTS_DIR}/06_roc_curves.png", dpi=150, bbox_inches="tight")
 plt.close()
 print("\n[4.7] Saving ROC Curves plot as 06_roc_curves.png..... Complete ✓")
 
+# Confusion Matrices
 fig, axes = plt.subplots(1, 4, figsize=(18, 4))
 
 confus_df = [
@@ -482,6 +475,7 @@ print("=" * 60)
 print("5. Model Diagnostic")
 print("=" * 60)
 
+# Train vs Test AUC Gaps
 print("\n[5.1] Train vs Test AUC Gap: ")
 
 model_registry = {
@@ -510,7 +504,7 @@ print("-" * 60)
 diag_df = pd.DataFrame(diagnostics).T
 print(diag_df.to_string())
 
-# Threshold adjustment to assess trade-off
+# Threshold adjustments
 print("\n[5.2] Adjusted Threshold Check: ")
 print("-" * 60)
 
@@ -567,7 +561,7 @@ disp = ConfusionMatrixDisplay(confusion_matrix=cm,
 disp.plot(ax=axes[1], colorbar=False, cmap="Blues")
 axes[1].set_title("Confusion Matrix: Random Forest @ 0.44 Threshold")
 
-# Performance Metrics
+# Performance Metrics for Random Forest at 0.44 Threshold
 recall   = recall_score(y_test, rand_for_pred_44)
 accuracy = accuracy_score(y_test, rand_for_pred_44)
 f1       = f1_score(y_test, rand_for_pred_44)
