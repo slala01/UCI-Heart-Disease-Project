@@ -6,7 +6,7 @@ print("=" * 60)
 print("UCI Heart Disease Data - Classification Project")
 print("=" * 60)
 
-# Imports #
+# Imports
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,7 +16,7 @@ import os
 from sklearn import datasets
 from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
 from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.metrics import (accuracy_score, recall_score, roc_auc_score, f1_score, confusion_matrix, precision_score, ConfusionMatrixDisplay, RocCurveDisplay, classification_report)
+from sklearn.metrics import (accuracy_score, recall_score, roc_auc_score, f1_score, confusion_matrix, precision_score, ConfusionMatrixDisplay, roc_curve, RocCurveDisplay, classification_report)
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
@@ -27,7 +27,7 @@ import shap
 
 warnings.filterwarnings("ignore")
 
-# Config #
+# File Configurations
 RANDOM_STATE = 67
 OUTPUT_DIR = "outputs"
 PLOTS_DIR = "outputs/plots"
@@ -76,14 +76,14 @@ else:
 
 # Recode target variable to binary
 df["target"] = df["target"].apply(lambda x: 1 if x ==  "present" else 0)
+print("\n")
 
 # =============================================================================
 # 2. EDA & Visualization
 # =============================================================================
 
-print("\n")
 print("=" * 60)
-print("1. EDA & Visualization")
+print("2. EDA & Visualization")
 print("=" * 60)
 
 # Target Variable
@@ -203,21 +203,21 @@ sns.heatmap(corr, mask=mask, annot=True, fmt=".2f", cmap="RdYlGn",
             annot_kws={"size": 8})
 ax.set_title("Feature Correlation")
 plt.tight_layout()
-plt.savefig(f"{PLOTS_DIR}/04_correlation.png", dpi=150, bbox_inches="tight")
+plt.savefig(f"{PLOTS_DIR}/04_correlation_plot.png", dpi=150, bbox_inches="tight")
 plt.close()
-print("\n[2.4] Saving Correlation Plot as 04_correlation.png..... Complete ✓")
+print("\n[2.4] Saving Correlation Plot as 04_correlation_plot.png..... Complete ✓")
 
 # Key correlations with Target
 print("\n[2.5] Key Correlations with target: ")
 print("-" * 60)
 target_corr = corr["target"].drop("target").sort_values(ascending=False)
 print(target_corr.round(3))
+print("\n")
 
 # =============================================================================
 # 3. Feature Engineering
 # =============================================================================
 
-print("\n")
 print("=" * 60)
 print("3. Feature Engineering")
 print("=" * 60)
@@ -225,28 +225,28 @@ print("=" * 60)
 df_engin = df.copy()
 
 # Remove weakest correlated variable to target
-print("\n[3.2] Drop weakeast correlated feature to target: fasting_blood_sugar (r = -0.016)")
+print("\n[3.1] Drop weakeast correlated feature to target: fasting_blood_sugar (r = -0.016)")
 df_engin = df_engin.drop(columns=["fasting_blood_sugar"])
 
 # Final Feature List
 X = df_engin.drop(columns=["target"])
 y = df_engin["target"]
 
-print(f"\n[3.3] Final Feature List: ")
+print(f"\n[3.2] Final Feature List: ")
 print("-" * 60)
 for col in X.columns:
     print(f"    - {col}")
 
 # Perform Train/Test split
-print("\n[3.4] Split raw data 75/25 for Random Forest and XGBoost Models: ")
+print("\n[3.3] Train/Test split raw data 75/25 for Random Forest and XGBoost Models: ")
 X_train_raw, X_test_raw, y_train, y_test = train_test_split(
     X, y, test_size=0.25, random_state=RANDOM_STATE, stratify=y
 )
 
-print(f"  X_train_raw shape : {X_train_raw.shape} → for RF, XGBoost")
-print(f"  X_test_raw  shape : {X_test_raw.shape}  → for RF, XGBoost")
+print(f"\n X_train_raw shape : {X_train_raw.shape} → for Random Forest and XGBoost models")
+print(f" X_test_raw  shape : {X_test_raw.shape}  → for Random Forest and XGBoost models")
 
-print("\n[3.5] Transform skewed variables and scale data for Logistic Regression and SVM Models:")
+print("\n[3.4] Transform skewed variables and scale data for Logistic Regression and SVM Models:")
 scaler = StandardScaler()
 
 X_train_scaled = X_train_raw.copy()
@@ -258,22 +258,22 @@ skewed_cols = ["serum_cholestoral", "oldpeak"]
 X_train_scaled[skewed_cols] = np.log1p(X_train_scaled[skewed_cols])
 X_test_scaled[skewed_cols]  = np.log1p(X_test_scaled[skewed_cols])
 
-print(f"Transforming serum_cholestoral ..... Complete ✓")
-print(f"Transforming oldpeak ..... Complete ✓")
+print(f"\n Transforming serum_cholestoral ..... Complete ✓")
+print(f" Transforming oldpeak ..... Complete ✓")
 
 # Scale data
 X_train_scaled[numerical_cols] = scaler.fit_transform(X_train_scaled[numerical_cols])
 X_test_scaled[numerical_cols]  = scaler.transform(X_test_scaled[numerical_cols])
 
-print("\n[3.6] Split scaled data for Logisitic Regression and SVM Models: ")
-print(f"\n  X_train_scaled shape : {X_train_scaled.shape} → for LR, SVM")
-print(f"  X_test_scaled  shape : {X_test_scaled.shape}  → for LR, SVM")
+print("\n[3.5] Train/Test split scaled data 75/25 for Logisitic Regression and SVM Models: ")
+print(f"\n X_train_scaled shape : {X_train_scaled.shape} → for Logistic Regression and SVM models")
+print(f" X_test_scaled  shape : {X_test_scaled.shape}  → for Logistic Regression and SVM models")
+print("\n")
 
 # =============================================================================
 # 4. Modeling and Performance Metrics
 # =============================================================================
 
-print("\n")
 print("=" * 60)
 print("4. Modeling and Performance Metrics")
 print("=" * 60)
@@ -472,12 +472,12 @@ plt.tight_layout()
 plt.savefig(f"{PLOTS_DIR}/07_confusion_matrices.png", dpi=150, bbox_inches="tight")
 plt.close()
 print("\n[4.8] Saving Confusion Matrices as 07_confusion_matrices.png..... Complete ✓")
+print("\n")
 
 # =============================================================================
 # 5. Model Diagnostic
 # =============================================================================
 
-print("\n")
 print("=" * 60)
 print("5. Model Diagnostic")
 print("=" * 60)
@@ -546,3 +546,40 @@ for name, (model, X_test_m) in threshold_models.items():
         auc = roc_auc_score(y_test, probs)
         f1 = f1_score(y_test, preds)
         print(f"  {thresh:<12} {recall:<10.4f} {auc:<12.4f} {f1:<10.4f} {accuracy:<10.4f}")
+
+print("\n[5.3] Optimal Model Threshold: Random Forest @ 0.44 Threshold")
+
+rand_for_pred_44 = (rand_for_prob >= 0.44).astype(int)
+
+# ROC Curve for Random Forest at 0.44 Threshold
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+fpr, tpr, thresholds_roc = roc_curve(y_test, rand_for_prob)
+auc_score = roc_auc_score(y_test, rand_for_prob)
+
+axes[0].plot(fpr, tpr, color="red", lw=2,
+              label=f"Random Forest (AUC = {auc_score})")
+axes[0].scatter(fpr[np.argmin(np.abs(thresholds_roc - 0.44))],
+                 tpr[np.argmin(np.abs(thresholds_roc - 0.44))],
+                 color="black", zorder=5, s=100,
+                 label="Threshold = 0.44")
+axes[0].plot([0, 1], [0, 1], "k--", alpha=0.5, label="Random Classifier")
+axes[0].set_title("ROC Curve: Random Forest @ 0.44 Threshold")
+axes[0].set_xlabel("False Positive Rate")
+axes[0].set_ylabel("True Positive Rate")
+axes[0].legend(loc="lower right")
+axes[0].grid(alpha=0.3)
+
+# Confusion Matrix for Random Forest at 0.44 Threshold
+cm   = confusion_matrix(y_test, rand_for_pred_44)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm,
+                               display_labels=["No Disease", "Disease"])
+disp.plot(ax=axes[1], colorbar=False, cmap="Blues")
+axes[1].set_title("Confusion Matrix: Random Forest @ 0.44 Threshold")
+
+plt.suptitle("Random Forest: Optimal Threshold @ 0.44")
+plt.tight_layout()
+plt.savefig(f"{PLOTS_DIR}/08_random_forest_optimal_threshold.png",
+             dpi=150, bbox_inches="tight")
+plt.close()
+print("Saving ROC Curve and Confusion Matrix plot as 08_random_forest_optimal_threshold.png..... Complete ✓")
