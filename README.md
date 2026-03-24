@@ -24,7 +24,7 @@ https://www.openml.org/search?type=data&status=active&id=46590&sort=runs
 | Section | Description |
 |---|---|
 | **1. Data Ingestion** | Load dataset from OpenML, inspect shape, descriptive stats, missing value check, encode target to binary |
-| **2. EDA & Visualization** | Target distribution, numerical and categorical feature distributions,  correlation plot, key correlation highlight|
+| **2. EDA & Visualization** | Target distribution, numerical and categorical feature distributions,  correlation plot |
 | **3. Feature Engineering** | Drop weak features, stratified train/test split, log transforms, scaling |
 | **4. Model Training** | GridSearchCV tuning (RF, XGBoost, SVM), individual model evaluation, results comparison |
 | **5. Model Diagnostics** | Bias-variance analysis, Threshold sweep across all models, determination of optimal model |

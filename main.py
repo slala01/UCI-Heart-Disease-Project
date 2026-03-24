@@ -199,13 +199,6 @@ plt.savefig(f"{PLOTS_DIR}/04_correlation_plot.png", dpi=150, bbox_inches="tight"
 plt.close()
 print("\n[2.4] Saving Correlation Plot as 04_correlation_plot.png..... Complete ✓")
 
-# Key correlations with Target
-print("\n[2.5] Key Correlations with target: ")
-print("-" * 60)
-target_corr = corr["target"].drop("target").sort_values(ascending=False)
-print(target_corr.round(3))
-print("\n")
-
 # =============================================================================
 # 3. Feature Engineering
 # =============================================================================
