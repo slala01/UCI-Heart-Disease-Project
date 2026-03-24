@@ -16,7 +16,7 @@ import os
 from sklearn import datasets
 from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
 from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.metrics import (accuracy_score, roc_auc_score, f1_score, confusion_matrix, ConfusionMatrixDisplay, RocCurveDisplay, classification_report)
+from sklearn.metrics import (accuracy_score, recall_score, roc_auc_score, f1_score, confusion_matrix, precision_score, ConfusionMatrixDisplay, RocCurveDisplay, classification_report)
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
@@ -37,7 +37,6 @@ os.makedirs(PLOTS_DIR, exist_ok=True)
 # 1. Import Data and Insepct
 # =============================================================================
 
-print("\n")
 print("=" * 60)
 print("1. Import Data and Insepct")
 print("=" * 60)
@@ -60,10 +59,13 @@ df["target"] = y
 print(f"\n[1.1] Dataset loaded: {dataset.details['name']}")
 print(f"\n[1.2] Dataset shape: {df.shape[0]} rows x {df.shape[1]} columns")
 print("\n[1.3] First 5 rows of dataset:")
+print("-" * 60)
 print(df.head())
 print("\n[1.4] Descriptive Statistics:")
+print("-" * 60)
 print(df.describe())
 print(f"\n[1.5] Missing Values:")
+print("-" * 60)
 missing = df.isnull().sum()
 missing_pct = (df.isnull().sum() / len(df) * 100).round(2)
 missing_df = pd.DataFrame({"Missing Count": missing, "Missing %": missing_pct})
@@ -85,7 +87,6 @@ print("1. EDA & Visualization")
 print("=" * 60)
 
 # Target Variable
-print("\n[2.1] Target variable (Presence of Disease) Distributiion: ")
 fig, axes = plt.subplots(1, 2, figsize=(10, 4))
 
 # Plot info
@@ -116,7 +117,7 @@ axes[1].set_title("Heart Disease Proportion")
 plt.tight_layout()
 plt.savefig(f"{PLOTS_DIR}/01_target_distribution.png", dpi=150, bbox_inches="tight")
 plt.close()
-print("Saved: 01_target_distribution.png")
+print("\n[2.1] Saving Target Distribution plot as 01_target_distribution.png..... Complete ✓")
 
 # Define Categorical vs Numerical Feature columns
 numerical_cols = ["age", "resting_blood_pressure", "serum_cholestoral",
@@ -138,7 +139,6 @@ feat_bins = 20
 feat_labels = ["No Disease", "Disease"]
 
 # Bar plots
-print("\n[2.2] Numerical feature variables Distributiion (Bar plots): ")
 fig, axes = plt.subplots(2, 3, figsize=(15, 8))
 axes = axes.flatten()
 for i, col in enumerate(numerical_cols):
@@ -164,32 +164,9 @@ plt.suptitle("Distribution of Numerical Features")
 plt.tight_layout()
 plt.savefig(f"{PLOTS_DIR}/02_numerical_distributions.png", dpi=150, bbox_inches="tight")
 plt.close()
-print("Saved: 02_numerical_distributions.png")
-
-# Boxplots
-print("\n[2.3] Numerical feature variables Boxplots: ")
-fig, axes = plt.subplots(2, 3, figsize=(15, 8))
-axes = axes.flatten()
-
-for i, col in enumerate(numerical_cols):
-    data_0 = df[df["target"] == 0][col]
-    data_1 = df[df["target"] == 1][col]
-    bp = axes[i].boxplot([data_0, data_1],
-                          patch_artist=True,
-                          labels=feat_labels)
-    bp["boxes"][0].set_facecolor(feat_NoDisease_color)
-    bp["boxes"][1].set_facecolor(feat_Disease_color)
-    axes[i].set_title(col.replace("_", " ").title())
-    axes[i].set_ylabel("Value")
-
-plt.suptitle("Boxplots of Numerical Features")
-plt.tight_layout()
-plt.savefig(f"{PLOTS_DIR}/03_boxplots.png", dpi=150, bbox_inches="tight")
-plt.close()
-print("Saved: 03_boxplots.png")
+print("\n[2.2] Saving Numerical Features Distribution plot as 02_numerical_distributions.png..... Complete ✓")
 
 # Categorical feature variables by Target variable
-print("\n[2.4] Categorical Feature Counts: ")
 fig, axes = plt.subplots(2, 4, figsize=(18, 8))
 axes = axes.flatten()
 
@@ -212,12 +189,11 @@ axes[-1].set_visible(False)
 
 plt.suptitle("Categorical Features by Target Class")
 plt.tight_layout()
-plt.savefig(f"{PLOTS_DIR}/04_categorical_counts.png", dpi=150, bbox_inches="tight")
+plt.savefig(f"{PLOTS_DIR}/03_categorical_counts.png", dpi=150, bbox_inches="tight")
 plt.close()
-print("Saved: 04_categorical_counts.png")
+print("\n[2.3] Saving Categotrical Counts plot as 03_categorical_counts.png..... Complete ✓")
 
 # Correlation Plot
-print("\n[2.5] Correlation Plot: ")
 fig, ax = plt.subplots(figsize=(12, 9))
 
 corr = df.corr()
@@ -227,25 +203,15 @@ sns.heatmap(corr, mask=mask, annot=True, fmt=".2f", cmap="RdYlGn",
             annot_kws={"size": 8})
 ax.set_title("Feature Correlation")
 plt.tight_layout()
-plt.savefig(f"{PLOTS_DIR}/05_correlation.png", dpi=150, bbox_inches="tight")
+plt.savefig(f"{PLOTS_DIR}/04_correlation.png", dpi=150, bbox_inches="tight")
 plt.close()
-print("Saved: 05_correlation.png")
+print("\n[2.4] Saving Correlation Plot as 04_correlation.png..... Complete ✓")
 
 # Key correlations with Target
-print("\n[2.6] Key Correlations with target: ")
+print("\n[2.5] Key Correlations with target: ")
+print("-" * 60)
 target_corr = corr["target"].drop("target").sort_values(ascending=False)
 print(target_corr.round(3))
-
-fig, ax = plt.subplots(figsize=(8, 6))
-colors = ["red" if count > 0 else "green" for count in target_corr.values]
-ax.barh(target_corr.index, target_corr.values, color=colors, edgecolor="black")
-ax.axvline(0, color="black", linewidth=0.8)
-ax.set_title("Feature Correlations with Target")
-ax.set_xlabel("Correlation Coefficient")
-plt.tight_layout()
-plt.savefig(f"{PLOTS_DIR}/06_key_correlations.png", dpi=150, bbox_inches="tight")
-plt.close()
-print("Saved: 06_key_correlations.png")
 
 # =============================================================================
 # 3. Feature Engineering
@@ -259,38 +225,49 @@ print("=" * 60)
 df_engin = df.copy()
 
 # Remove weakest correlated variable to target
-print("\n[3.1] Drop weakeast correlated feature to target: fasting_blood_sugar (r = -0.016)")
+print("\n[3.2] Drop weakeast correlated feature to target: fasting_blood_sugar (r = -0.016)")
 df_engin = df_engin.drop(columns=["fasting_blood_sugar"])
 
 # Final Feature List
 X = df_engin.drop(columns=["target"])
 y = df_engin["target"]
 
-print(f"\n[3.2] Final Feature List: ")
+print(f"\n[3.3] Final Feature List: ")
+print("-" * 60)
 for col in X.columns:
     print(f"    - {col}")
 
 # Perform Train/Test split
-
-print("\n[3.3] Split raw data 80/20 for Random Tree and XGBoost Models :")
+print("\n[3.4] Split raw data 75/25 for Random Forest and XGBoost Models: ")
 X_train_raw, X_test_raw, y_train, y_test = train_test_split(
     X, y, test_size=0.25, random_state=RANDOM_STATE, stratify=y
 )
 
-print(f"  X_train_raw    shape : {X_train_raw.shape} → for RF, XGBoost")
-print(f"  X_test_raw shape : {X_test_raw.shape} → for RF, XGBoost")
+print(f"  X_train_raw shape : {X_train_raw.shape} → for RF, XGBoost")
+print(f"  X_test_raw  shape : {X_test_raw.shape}  → for RF, XGBoost")
 
-print("\n[3.4] Split scaled data 80/20 for Logistic Regression and SVM Models :")
+print("\n[3.5] Transform skewed variables and scale data for Logistic Regression and SVM Models:")
 scaler = StandardScaler()
 
 X_train_scaled = X_train_raw.copy()
-X_test_scaled = X_test_raw.copy()
+X_test_scaled  = X_test_raw.copy()
 
-X_train_scaled[numerical_cols] = scaler.fit_transform(X_train_raw[numerical_cols])
-X_test_scaled[numerical_cols]  = scaler.transform(X_test_raw[numerical_cols])
+# Log transform skewed features (LR and SVM only)
+skewed_cols = ["serum_cholestoral", "oldpeak"]
 
-print(f"  X_train_scaled    shape : {X_train_raw.shape} → for LR, SVM")
-print(f"  X_test_scaled shape : {X_test_scaled.shape} → for LR, SVM")
+X_train_scaled[skewed_cols] = np.log1p(X_train_scaled[skewed_cols])
+X_test_scaled[skewed_cols]  = np.log1p(X_test_scaled[skewed_cols])
+
+print(f"Transforming serum_cholestoral ..... Complete ✓")
+print(f"Transforming oldpeak ..... Complete ✓")
+
+# Scale data
+X_train_scaled[numerical_cols] = scaler.fit_transform(X_train_scaled[numerical_cols])
+X_test_scaled[numerical_cols]  = scaler.transform(X_test_scaled[numerical_cols])
+
+print("\n[3.6] Split scaled data for Logisitic Regression and SVM Models: ")
+print(f"\n  X_train_scaled shape : {X_train_scaled.shape} → for LR, SVM")
+print(f"  X_test_scaled  shape : {X_test_scaled.shape}  → for LR, SVM")
 
 # =============================================================================
 # 4. Modeling and Performance Metrics
@@ -304,9 +281,22 @@ print("=" * 60)
 results = {}
 
 # Logistic Regression
+log_reg_grid = {
+    "C": [0.01, 0.1, 1, 10, 100],
+    "penalty": ["l1", "l2"],
+    "solver": ["liblinear", "saga"]
+}
 
-log_reg_model = LogisticRegression(random_state=RANDOM_STATE, max_iter=1000)
-log_reg_model.fit(X_train_scaled, y_train)
+log_reg_grid = GridSearchCV(
+    LogisticRegression(random_state=RANDOM_STATE, max_iter=1000), 
+    param_grid=log_reg_grid, 
+    scoring="roc_auc",
+    cv=5
+)
+
+log_reg_grid.fit(X_train_scaled, y_train)
+
+log_reg_model = log_reg_grid.best_estimator_
 
 log_reg_pred = log_reg_model.predict(X_test_scaled)
 log_reg_prob = log_reg_model.predict_proba(X_test_scaled)[:, 1]
@@ -314,15 +304,29 @@ log_reg_prob = log_reg_model.predict_proba(X_test_scaled)[:, 1]
 results["Logistic Regression"] = {
     "AUC-ROC": roc_auc_score(y_test, log_reg_prob),
     "Accuracy": accuracy_score(y_test, log_reg_pred),
+    "Recall": round(recall_score(y_test, log_reg_pred), 4),
     "F1 Score": f1_score(y_test, log_reg_pred)
 }
 
 print("\n[4.1] Logistic Regression Model..... Complete ✓")
 
 # Support Vector Machine (SVM)
+svm_grid = {
+    "C": [0.1, 1, 10, 100, 1000],
+    "gamma": [1, 0.1, 0.01, 0.001, 0.0001],
+    "kernel": ["rbf"]
+}
 
-svm_model = SVC(random_state=RANDOM_STATE, probability=True)
-svm_model.fit(X_train_scaled, y_train)
+svm_grid = GridSearchCV(
+    SVC(random_state=RANDOM_STATE, probability=True), 
+    param_grid=svm_grid, 
+    scoring="roc_auc",
+    cv=5
+)
+
+svm_grid.fit(X_train_scaled, y_train)
+
+svm_model = svm_grid.best_estimator_
 
 svm_pred = svm_model.predict(X_test_scaled)
 svm_prob = svm_model.predict_proba(X_test_scaled)[:, 1]
@@ -330,6 +334,7 @@ svm_prob = svm_model.predict_proba(X_test_scaled)[:, 1]
 results["SVM"] = {
     "AUC-ROC": roc_auc_score(y_test, svm_prob),
     "Accuracy": accuracy_score(y_test, svm_pred),
+    "Recall": round(recall_score(y_test, svm_pred), 4),
     "F1 Score": f1_score(y_test, svm_pred)
 }
 
@@ -360,6 +365,7 @@ rand_for_prob = rand_for_model.predict_proba(X_test_raw)[:, 1]
 results["Random Forest"] = {
     "AUC-ROC": roc_auc_score(y_test, rand_for_prob),
     "Accuracy": accuracy_score(y_test, rand_for_pred),
+    "Recall": round(recall_score(y_test, rand_for_pred), 4),
     "F1 Score": f1_score(y_test, rand_for_pred)
 }
 
@@ -391,6 +397,7 @@ xgb_prob = xgb_model.predict_proba(X_test_raw)[:, 1]
 results["XGBoost"] = {
     "AUC-ROC": roc_auc_score(y_test, xgb_prob),
     "Accuracy": accuracy_score(y_test, xgb_pred),
+    "Recall": round(recall_score(y_test, xgb_pred), 4),
     "F1 Score": f1_score(y_test, xgb_pred)
 }
 
@@ -399,20 +406,21 @@ print("\n[4.4] XGBoost Model..... Complete ✓")
 print("\n[4.5] Performance Metrics: ")
 
 results_df = pd.DataFrame(results).T
+print("-" * 60)
 print(results_df.to_string())
 
-print("\n[4.6] Model Performance Comparison Plot: ")
+fig, axes = plt.subplots(2, 2, figsize=(15,9))
+axes = axes.flatten()
 
-fig, axes = plt.subplots(1, 3, figsize=(15,5))
-
-perf_metrics = ["AUC-ROC", "Accuracy", "F1 Score"]
-perf_colors = ["green", "blue", "purple", "red"]
+perf_metrics = ["AUC-ROC", "Accuracy", "Recall", "F1 Score"]
+model_colors = ["green", "blue", "purple", "red"]
 
 for i, perf_metrics in enumerate(perf_metrics):
     values = results_df[perf_metrics]
-    bars = axes[i].bar(results_df.index, values, color=perf_colors, edgecolor="black")
+    bars = axes[i].bar(results_df.index, values, color=model_colors, edgecolor="black")
     axes[i].set_title(perf_metrics, fontsize=12)
     axes[i].set_ylabel("Score")
+    axes[i].set_ylim(0, 1.10)
     axes[i].set_xticklabels(results_df.index)
     for bar, count in zip(bars, values):
         axes[i].text(
@@ -424,11 +432,10 @@ for i, perf_metrics in enumerate(perf_metrics):
 
 plt.suptitle("Model Performance Comparison")
 plt.tight_layout()
-plt.savefig(f"{PLOTS_DIR}/07_model_comparison.png", dpi=150, bbox_inches="tight")
+plt.savefig(f"{PLOTS_DIR}/05_model_comparison.png", dpi=150, bbox_inches="tight")
 plt.close()
-print("Saved: 07_model_comparison.png")
+print("\n[4.6] Saving Model Comparison plot as 05_model_comparison.png..... Complete ✓")
 
-print("\n[4.7] ROC Curves Plot by Model: ")
 fig, ax = plt.subplots(figsize=(8, 6))
 
 RocCurveDisplay.from_estimator(log_reg_model,  X_test_scaled, y_test, ax=ax, name="Logistic Regression")
@@ -440,12 +447,10 @@ ax.plot([0, 1], [0, 1], "k--", label="Random Classifier")
 ax.set_title("ROC Curves - All Models", fontweight="bold", fontsize=12)
 ax.legend(loc="lower right")
 plt.tight_layout()
-plt.savefig(f"{PLOTS_DIR}/08_roc_curves.png", dpi=150, bbox_inches="tight")
+plt.savefig(f"{PLOTS_DIR}/06_roc_curves.png", dpi=150, bbox_inches="tight")
 plt.close()
-print("Saved: 08_roc_curves.png")
+print("\n[4.7] Saving ROC Curves plot as 06_roc_curves.png..... Complete ✓")
 
-
-print("\n[4.8] Confusion Matrices by Model: ")
 fig, axes = plt.subplots(1, 4, figsize=(18, 4))
 
 confus_df = [
@@ -464,9 +469,9 @@ for i, (name, model, X_test_m, Y_pred) in enumerate(confus_df):
 
 plt.suptitle("Confusion Matrices", fontsize=14, fontweight="bold")
 plt.tight_layout()
-plt.savefig(f"{PLOTS_DIR}/09_confusion_matrices.png", dpi=150, bbox_inches="tight")
+plt.savefig(f"{PLOTS_DIR}/07_confusion_matrices.png", dpi=150, bbox_inches="tight")
 plt.close()
-print("Saved: 09_confusion_matrices.png")
+print("\n[4.8] Saving Confusion Matrices as 07_confusion_matrices.png..... Complete ✓")
 
 # =============================================================================
 # 5. Model Diagnostic
@@ -511,9 +516,33 @@ for name, (model, X_train_m, X_test_m) in model_registry.items():
         "Interpretation" : interpretation
     }
 
-print("\n  Diagnostics Summary Table:")
 print("-" * 60)
 diag_df = pd.DataFrame(diagnostics).T
 print(diag_df.to_string())
-diag_df.to_csv(f"{OUTPUT_DIR}/model_diagnostics.csv")
-print(f"\n Saved: model_diagnostics.csv")
+
+# Threshold adjustment to assess trade-off
+print("\n[5.2] Adjusted Threshold Check: ")
+print("-" * 60)
+
+threshold_models = {
+    "Logistic Regression": (log_reg_model,  X_test_scaled),
+    "SVM": (svm_model, X_test_scaled),
+    "Random Forest": (rand_for_model,  X_test_raw),
+    "XGBoost": (xgb_model, X_test_raw)
+}
+
+thresholds = [0.49, 0.48, 0.47, 0.46, 0.45, 0.44, 0.43, 0.42, 0.41, 0.40]
+
+for name, (model, X_test_m) in threshold_models.items():
+    print(f"\n  {name}:")
+    print(f"  {'-'*60}")
+    print(f"  {'Threshold':<12} {'Recall':<10} {'AUC-ROC':<12} {'F1':<10} {'Accuracy':<10}")
+    print(f"  {'-'*60}")
+    probs = model.predict_proba(X_test_m)[:, 1]
+    for thresh in thresholds:
+        preds = (probs >= thresh).astype(int)
+        recall = recall_score(y_test, preds)
+        accuracy = accuracy_score(y_test, preds)
+        auc = roc_auc_score(y_test, probs)
+        f1 = f1_score(y_test, preds)
+        print(f"  {thresh:<12} {recall:<10.4f} {auc:<12.4f} {f1:<10.4f} {accuracy:<10.4f}")
