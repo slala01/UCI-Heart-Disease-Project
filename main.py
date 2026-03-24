@@ -423,10 +423,10 @@ print("\n[4.6] Saving Model Comparison plot as 05_model_comparison.png..... Comp
 # ROC Curves
 fig, ax = plt.subplots(figsize=(8, 6))
 
-RocCurveDisplay.from_estimator(log_reg_model,  X_test_scaled, y_test, ax=ax, name="Logistic Regression")
-RocCurveDisplay.from_estimator(svm_model,  X_test_scaled, y_test, ax=ax, name="SVM")
-RocCurveDisplay.from_estimator(rand_for_model, X_test_raw, y_test, ax=ax, name="Random Forest")
-RocCurveDisplay.from_estimator(xgb_model, X_test_raw, y_test, ax=ax, name="XGBoost")
+RocCurveDisplay.from_estimator(log_reg_model,  X_test_scaled, y_test, ax=ax, color="green", name="Logistic Regression")
+RocCurveDisplay.from_estimator(svm_model,  X_test_scaled, y_test, ax=ax, color="blue", name="SVM")
+RocCurveDisplay.from_estimator(rand_for_model, X_test_raw, y_test, ax=ax, color="purple", name="Random Forest")
+RocCurveDisplay.from_estimator(xgb_model, X_test_raw, y_test, ax=ax, color="red", name="XGBoost")
 
 ax.plot([0, 1], [0, 1], "k--", label="Random Classifier")
 ax.set_title("ROC Curves - All Models", fontweight="bold", fontsize=12)
@@ -534,7 +534,7 @@ fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 fpr, tpr, thresholds_roc = roc_curve(y_test, rand_for_prob)
 auc_score = roc_auc_score(y_test, rand_for_prob)
 
-axes[0].plot(fpr, tpr, color="red", lw=2,
+axes[0].plot(fpr, tpr, color="purple", lw=2,
               label=f"Random Forest (AUC = {auc_score:.3f})")
 axes[0].scatter(fpr[np.argmin(np.abs(thresholds_roc - 0.44))],
                  tpr[np.argmin(np.abs(thresholds_roc - 0.44))],
