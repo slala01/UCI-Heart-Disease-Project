@@ -535,7 +535,7 @@ for name, (model, X_test_m) in threshold_models.items():
         accuracy = accuracy_score(y_test, preds)
         auc = roc_auc_score(y_test, probs)
         f1 = f1_score(y_test, preds)
-        print(f"  {thresh:<12} {recall:<10.4f} {auc:<12.4f} {f1:<10.4f} {accuracy:<10.4f}")
+        print(f"  {thresh:<12} {recall:<10.3f} {auc:<12.3f} {f1:<10.3f} {accuracy:<10.3f}")
 
 print("\n[5.3] Optimal Model Threshold: Random Forest @ 0.44 Threshold")
 
