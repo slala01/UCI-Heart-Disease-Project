@@ -16,7 +16,7 @@ import os
 from sklearn import datasets
 from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
 from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.metrics import (accuracy_score, recall_score, roc_auc_score, f1_score, confusion_matrix, precision_score, ConfusionMatrixDisplay, roc_curve, RocCurveDisplay, classification_report)
+from sklearn.metrics import accuracy_score, recall_score, roc_auc_score, f1_score, confusion_matrix, precision_score, ConfusionMatrixDisplay, roc_curve, RocCurveDisplay, classification_report
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
