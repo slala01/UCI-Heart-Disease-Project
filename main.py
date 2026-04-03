@@ -16,29 +16,33 @@ import os
 from sklearn import datasets
 from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
 from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.metrics import accuracy_score, recall_score, roc_auc_score, f1_score, confusion_matrix, precision_score, ConfusionMatrixDisplay, roc_curve, RocCurveDisplay, classification_report
+from sklearn.metrics import accuracy_score, recall_score, roc_auc_score, f1_score, confusion_matrix, ConfusionMatrixDisplay, roc_curve, RocCurveDisplay, classification_report, precision_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.model_selection import learning_curve
+from sklearn.pipeline import Pipeline
 from scipy.stats import gaussian_kde
 from xgboost import XGBClassifier
 import shap
+import joblib
 
 warnings.filterwarnings("ignore")
 
 # File Configurations
 RANDOM_STATE = 67
-OUTPUT_DIR = "outputs"
-PLOTS_DIR = "outputs/plots"
+OUTPUT_DIR   = "outputs"
+PLOTS_DIR    = "outputs/plots"
+MODELS_DIR   = "outputs/models"
 os.makedirs(PLOTS_DIR, exist_ok=True)
+os.makedirs(MODELS_DIR, exist_ok=True)
 
 # =============================================================================
-# 1. Import Data and Insepct
+# 1. Import Data and Inspect
 # =============================================================================
 
 print("=" * 60)
-print("1. Import Data and Insepct")
+print("1. Import Data and Inspect")
 print("=" * 60)
 
 # Load in dataset from OpenML
@@ -183,12 +187,12 @@ plt.suptitle("Categorical Features by Target Class")
 plt.tight_layout()
 plt.savefig(f"{PLOTS_DIR}/03_categorical_counts.png", dpi=150, bbox_inches="tight")
 plt.close()
-print("\n[2.3] Saving Categotrical Counts plot as 03_categorical_counts.png..... Complete ✓")
+print("\n[2.3] Saving Categorical Counts plot as 03_categorical_counts.png..... Complete ✓")
 
 # Correlation Plot
 fig, ax = plt.subplots(figsize=(12, 9))
 
-corr = df.corr()
+corr = df.corr(numeric_only=True)
 mask = np.triu(np.ones_like(corr, dtype=bool))
 sns.heatmap(corr, mask=mask, annot=True, fmt=".2f", cmap="RdYlGn",
             center=0, linewidths=0.5, ax=ax,
@@ -209,9 +213,19 @@ print("=" * 60)
 
 df_engin = df.copy()
 
-# Remove weakest correlated variable to target
-print("\n[3.1] Drop weakeast correlated feature to target: fasting_blood_sugar (r = -0.016)")
-df_engin = df_engin.drop(columns=["fasting_blood_sugar"])
+# One Hot Encoding for categorical features
+print("\n[3.1] One Hot Encoding categorical features...")
+
+df_engin = pd.get_dummies(df_engin,
+                           columns  = categorical_cols,
+                           dtype    = int,
+                           drop_first = False)
+
+print(f"  Encoded columns : {categorical_cols}")
+print(f"  Shape after encoding : {df_engin.shape}")
+print(f"\n  New columns added:")
+for col in df_engin.columns:
+    print(f"    - {col}")
 
 # Final Feature List
 X = df_engin.drop(columns=["target"])
@@ -228,32 +242,8 @@ X_train_raw, X_test_raw, y_train, y_test = train_test_split(
     X, y, test_size=0.25, random_state=RANDOM_STATE, stratify=y
 )
 
-print(f"\n X_train_raw shape : {X_train_raw.shape} → for Random Forest and XGBoost models")
-print(f" X_test_raw  shape : {X_test_raw.shape}  → for Random Forest and XGBoost models")
-
-print("\n[3.4] Transform skewed variables and scale data for Logistic Regression and SVM Models:")
-scaler = StandardScaler()
-
-X_train_scaled = X_train_raw.copy()
-X_test_scaled  = X_test_raw.copy()
-
-# Log transform skewed features (LR and SVM only)
-skewed_cols = ["serum_cholestoral", "oldpeak"]
-
-X_train_scaled[skewed_cols] = np.log1p(X_train_scaled[skewed_cols])
-X_test_scaled[skewed_cols]  = np.log1p(X_test_scaled[skewed_cols])
-
-print(f"\n Transforming serum_cholestoral ..... Complete ✓")
-print(f" Transforming oldpeak ..... Complete ✓")
-
-# Scale data
-X_train_scaled[numerical_cols] = scaler.fit_transform(X_train_scaled[numerical_cols])
-X_test_scaled[numerical_cols]  = scaler.transform(X_test_scaled[numerical_cols])
-
-print("\n[3.5] Train/Test split scaled data 75/25 for Logisitic Regression and SVM Models: ")
-print(f"\n X_train_scaled shape : {X_train_scaled.shape} → for Logistic Regression and SVM models")
-print(f" X_test_scaled  shape : {X_test_scaled.shape}  → for Logistic Regression and SVM models")
-print("\n")
+print(f"\n X_train_raw shape : {X_train_raw.shape}")
+print(f" X_test_raw  shape : {X_test_raw.shape}")
 
 # =============================================================================
 # 4. Modeling and Performance Metrics
@@ -263,125 +253,164 @@ print("=" * 60)
 print("4. Modeling and Performance Metrics")
 print("=" * 60)
 
+def save_model(model, model_name):
+    """Save trained model to pickle file."""
+    filename = model_name.lower().replace(" ", "_")
+    filepath = f"{MODELS_DIR}/{filename}.pkl"
+    joblib.dump(model, filepath)
+    print(f"  Model saved → {filepath}")
+
 results = {}
 
 # Logistic Regression
-log_reg_grid = {
-    "C": [0.01, 0.1, 1, 10, 100],
-    "penalty": ["l1", "l2"],
-    "solver": ["liblinear", "saga"]
+log_reg_pipeline = Pipeline([
+    ("scaler", StandardScaler()),
+    ("model",  LogisticRegression(random_state=RANDOM_STATE, max_iter=1000))
+])
+
+log_reg_param = {
+    "model__C"          : [0.01, 0.1, 1, 10, 100],
+    "model__penalty"    : ["l1", "l2"],
+    "model__solver"     : ["liblinear", "saga"]
 }
 
 log_reg_grid = GridSearchCV(
-    LogisticRegression(random_state=RANDOM_STATE, max_iter=1000), 
-    param_grid=log_reg_grid, 
+    log_reg_pipeline,
+    param_grid=log_reg_param,
     scoring="roc_auc",
-    cv=5
+    cv=5,
+    n_jobs=-1
 )
 
-log_reg_grid.fit(X_train_scaled, y_train)
+log_reg_grid.fit(X_train_raw, y_train)
 
 log_reg_model = log_reg_grid.best_estimator_
 
-log_reg_pred = log_reg_model.predict(X_test_scaled)
-log_reg_prob = log_reg_model.predict_proba(X_test_scaled)[:, 1]
+save_model(log_reg_model, "Logistic Regression")
+
+log_reg_pred = log_reg_model.predict(X_test_raw)
+log_reg_prob = log_reg_model.predict_proba(X_test_raw)[:, 1]
 
 results["Logistic Regression"] = {
-    "AUC-ROC": roc_auc_score(y_test, log_reg_prob),
-    "Accuracy": accuracy_score(y_test, log_reg_pred),
-    "Recall": round(recall_score(y_test, log_reg_pred), 4),
-    "F1 Score": f1_score(y_test, log_reg_pred)
+    "AUC-ROC"   : round(roc_auc_score(y_test, log_reg_prob), 4),
+    "Accuracy"  : round(accuracy_score(y_test, log_reg_pred), 4),
+    "Recall"    : round(recall_score(y_test, log_reg_pred), 4),
+    "F1 Score"  : round(f1_score(y_test, log_reg_pred), 4),
+    "Precision" : round(precision_score(y_test, log_reg_pred), 4)
 }
 
 print("\n[4.1] Logistic Regression Model..... Complete ✓")
 
 # Support Vector Machine (SVM)
-svm_grid = {
-    "C": [0.1, 1, 10, 100, 1000],
-    "gamma": [1, 0.1, 0.01, 0.001, 0.0001],
-    "kernel": ["rbf"]
+svm_pipeline = Pipeline([
+    ("scaler", StandardScaler()),
+    ("model",  SVC(random_state=RANDOM_STATE, probability=True))
+])
+
+svm_param = {
+    "model__C"      : [0.1, 1, 10, 100, 1000],
+    "model__gamma"  : [1, 0.1, 0.01, 0.001, 0.0001],
+    "model__kernel" : ["rbf"]
 }
 
 svm_grid = GridSearchCV(
-    SVC(random_state=RANDOM_STATE, probability=True), 
-    param_grid=svm_grid, 
+    svm_pipeline, 
+    param_grid=svm_param, 
     scoring="roc_auc",
-    cv=5
+    cv=5,
+    n_jobs=-1
 )
 
-svm_grid.fit(X_train_scaled, y_train)
+svm_grid.fit(X_train_raw, y_train)
 
 svm_model = svm_grid.best_estimator_
 
-svm_pred = svm_model.predict(X_test_scaled)
-svm_prob = svm_model.predict_proba(X_test_scaled)[:, 1]
+save_model(svm_model, "SVM")
+
+svm_pred = svm_model.predict(X_test_raw)
+svm_prob = svm_model.predict_proba(X_test_raw)[:, 1]
 
 results["SVM"] = {
-    "AUC-ROC": roc_auc_score(y_test, svm_prob),
-    "Accuracy": accuracy_score(y_test, svm_pred),
-    "Recall": round(recall_score(y_test, svm_pred), 4),
-    "F1 Score": f1_score(y_test, svm_pred)
+    "AUC-ROC"   : round(roc_auc_score(y_test, svm_prob), 4),
+    "Accuracy"  : round(accuracy_score(y_test, svm_pred), 4),
+    "Recall"    : round(recall_score(y_test, svm_pred), 4),
+    "F1 Score"  : round(f1_score(y_test, svm_pred), 4),
+    "Precision" : round(precision_score(y_test, svm_pred), 4)
 }
 
 print("\n[4.2] SVM Model..... Complete ✓")
 
 # Random Forest
-rand_for_grid = {
-    "n_estimators": [100, 300, 500],
-    "max_features": ["sqrt", "log2", "None"],
-    "max_depth": [3, 5, 10, None]
+rand_for_param = {
+    "n_estimators"      : [100, 300, 500],
+    "max_features"      : ["sqrt", "log2"],
+    "max_depth"         : [3, 5, 7],
+    "min_samples_split" : [5, 10, 20],
+    "min_samples_leaf"  : [3, 5, 10]
 }
 
 rand_for_grid = GridSearchCV(
     RandomForestClassifier(random_state=RANDOM_STATE), 
-    param_grid=rand_for_grid, 
+    param_grid=rand_for_param, 
     scoring="roc_auc",
-    cv=5
+    cv=5,
+    n_jobs=-1
 )
 
 rand_for_grid.fit(X_train_raw, y_train)
 
 rand_for_model = rand_for_grid.best_estimator_
 
+save_model(rand_for_model, "Random Forest") 
+
 rand_for_pred = rand_for_model.predict(X_test_raw)
 rand_for_prob = rand_for_model.predict_proba(X_test_raw)[:, 1]
 
 results["Random Forest"] = {
-    "AUC-ROC": roc_auc_score(y_test, rand_for_prob),
-    "Accuracy": accuracy_score(y_test, rand_for_pred),
-    "Recall": round(recall_score(y_test, rand_for_pred), 4),
-    "F1 Score": f1_score(y_test, rand_for_pred)
+    "AUC-ROC"   : round(roc_auc_score(y_test, rand_for_prob), 4),
+    "Accuracy"  : round(accuracy_score(y_test, rand_for_pred), 4),
+    "Recall"    : round(recall_score(y_test, rand_for_pred), 4),
+    "F1 Score"  : round(f1_score(y_test, rand_for_pred), 4),
+    "Precision" : round(precision_score(y_test, rand_for_pred), 4)
 }
 
 print("\n[4.3] Random Forest Model..... Complete ✓")
 
 # XGBoost
-xgb_grid = {
-    "n_estimators": [100, 300, 500],
-    "learning_rate": [0.01, 0.05, 0.1],
-    "max_depth": [3, 5, 7]
+xgb_param = {
+    "n_estimators"      : [50, 100, 200],    
+    "learning_rate"     : [0.01, 0.1],
+    "max_depth"         : [2, 3, 4],
+    "subsample"         : [0.6, 0.8],
+    "colsample_bytree"  : [0.6, 0.8],
+    "reg_alpha"         : [0, 0.1],
+    "reg_lambda"        : [1.0, 5.0]
 }
 
 xgb_grid = GridSearchCV(
     XGBClassifier(random_state=RANDOM_STATE), 
-    param_grid=xgb_grid, 
+    param_grid=xgb_param, 
     scoring="roc_auc",
-    cv=5
+    cv=5,
+    n_jobs=-1
 )
 
 xgb_grid.fit(X_train_raw, y_train)
 
 xgb_model = xgb_grid.best_estimator_
 
+save_model(xgb_model, "XGBoost")
+
 xgb_pred = xgb_model.predict(X_test_raw)
 xgb_prob = xgb_model.predict_proba(X_test_raw)[:, 1]
 
 
 results["XGBoost"] = {
-    "AUC-ROC": roc_auc_score(y_test, xgb_prob),
-    "Accuracy": accuracy_score(y_test, xgb_pred),
-    "Recall": round(recall_score(y_test, xgb_pred), 4),
-    "F1 Score": f1_score(y_test, xgb_pred)
+    "AUC-ROC"   : round(roc_auc_score(y_test, xgb_prob), 4),
+    "Accuracy"  : round(accuracy_score(y_test, xgb_pred), 4),
+    "Recall"    : round(recall_score(y_test, xgb_pred), 4),
+    "F1 Score"  : round(f1_score(y_test, xgb_pred), 4),
+    "Precision" : round(precision_score(y_test, xgb_pred), 4)
 }
 
 print("\n[4.4] XGBoost Model..... Complete ✓")
@@ -393,10 +422,10 @@ results_df = pd.DataFrame(results).T
 print("-" * 60)
 print(results_df.to_string())
 
-fig, axes = plt.subplots(2, 2, figsize=(15,9))
+fig, axes = plt.subplots(2, 3, figsize=(15, 9))
 axes = axes.flatten()
 
-perf_metrics = ["AUC-ROC", "Accuracy", "Recall", "F1 Score"]
+perf_metrics = ["AUC-ROC", "Accuracy", "Recall", "F1 Score", "Precision"]
 model_colors = ["green", "blue", "purple", "red"]
 
 for i, perf_metrics in enumerate(perf_metrics):
@@ -413,6 +442,9 @@ for i, perf_metrics in enumerate(perf_metrics):
         round(count, 3),
         ha="center"
     )
+        
+# Hide the unused 6th subplot
+axes[5].set_visible(False)
 
 plt.suptitle("Model Performance Comparison")
 plt.tight_layout()
@@ -423,8 +455,8 @@ print("\n[4.6] Saving Model Comparison plot as 05_model_comparison.png..... Comp
 # ROC Curves
 fig, ax = plt.subplots(figsize=(8, 6))
 
-RocCurveDisplay.from_estimator(log_reg_model,  X_test_scaled, y_test, ax=ax, color="green", name="Logistic Regression")
-RocCurveDisplay.from_estimator(svm_model,  X_test_scaled, y_test, ax=ax, color="blue", name="SVM")
+RocCurveDisplay.from_estimator(log_reg_model,  X_test_raw, y_test, ax=ax, color="green", name="Logistic Regression")
+RocCurveDisplay.from_estimator(svm_model,  X_test_raw, y_test, ax=ax, color="blue", name="SVM")
 RocCurveDisplay.from_estimator(rand_for_model, X_test_raw, y_test, ax=ax, color="purple", name="Random Forest")
 RocCurveDisplay.from_estimator(xgb_model, X_test_raw, y_test, ax=ax, color="red", name="XGBoost")
 
@@ -440,8 +472,8 @@ print("\n[4.7] Saving ROC Curves plot as 06_roc_curves.png..... Complete ✓")
 fig, axes = plt.subplots(1, 4, figsize=(18, 4))
 
 confus_df = [
-    ("Logistic Regression", log_reg_model, X_test_scaled, log_reg_pred),
-    ("SVM", svm_model, X_test_scaled, svm_pred),
+    ("Logistic Regression", log_reg_model, X_test_raw, log_reg_pred),
+    ("SVM", svm_model, X_test_raw, svm_pred),
     ("Random Forest", rand_for_model, X_test_raw, rand_for_pred),
     ("XGBoost", xgb_model, X_test_raw, xgb_pred)
 ]
@@ -472,8 +504,8 @@ print("=" * 60)
 print("\n[5.1] Train vs Test AUC Gap: ")
 
 model_registry = {
-    "Logistic Regression": (log_reg_model,  X_train_scaled, X_test_scaled),
-    "SVM": (svm_model,  X_train_scaled,    X_test_scaled),
+    "Logistic Regression": (log_reg_model,  X_train_raw, X_test_raw),
+    "SVM": (svm_model,  X_train_raw,    X_test_raw),
     "Random Forest": (rand_for_model, X_train_raw,    X_test_raw),
     "XGBoost": (xgb_model, X_train_raw, X_test_raw)
 }
@@ -502,8 +534,8 @@ print("\n[5.2] Adjusted Threshold Check: ")
 print("-" * 60)
 
 threshold_models = {
-    "Logistic Regression": (log_reg_model,  X_test_scaled),
-    "SVM": (svm_model, X_test_scaled),
+    "Logistic Regression": (log_reg_model,  X_test_raw),
+    "SVM": (svm_model, X_test_raw),
     "Random Forest": (rand_for_model,  X_test_raw),
     "XGBoost": (xgb_model, X_test_raw)
 }
@@ -513,7 +545,7 @@ thresholds = [0.49, 0.48, 0.47, 0.46, 0.45, 0.44, 0.43, 0.42, 0.41, 0.40]
 for name, (model, X_test_m) in threshold_models.items():
     print(f"\n  {name}:")
     print(f"  {'-'*60}")
-    print(f"  {'Threshold':<12} {'Recall':<10} {'AUC-ROC':<12} {'F1':<10} {'Accuracy':<10}")
+    print(f"  {'Threshold':<12} {'Recall':<10} {'AUC-ROC':<12} {'F1':<10} {'Accuracy':<10} {'Precision':<10}")
     print(f"  {'-'*60}")
     probs = model.predict_proba(X_test_m)[:, 1]
     for thresh in thresholds:
@@ -522,7 +554,8 @@ for name, (model, X_test_m) in threshold_models.items():
         accuracy = accuracy_score(y_test, preds)
         auc = roc_auc_score(y_test, probs)
         f1 = f1_score(y_test, preds)
-        print(f"  {thresh:<12} {recall:<10.3f} {auc:<12.3f} {f1:<10.3f} {accuracy:<10.3f}")
+        prec = precision_score(y_test, preds)
+        print(f"  {thresh:<12} {recall:<10.3f} {auc:<12.3f} {f1:<10.3f} {accuracy:<10.3f} {prec:<10.3f}")
 
 print("\n[5.3] Optimal Model Threshold: Random Forest @ 0.44 Threshold")
 
@@ -558,9 +591,10 @@ axes[1].set_title("Confusion Matrix: Random Forest @ 0.44 Threshold")
 recall   = recall_score(y_test, rand_for_pred_44)
 accuracy = accuracy_score(y_test, rand_for_pred_44)
 f1       = f1_score(y_test, rand_for_pred_44)
+precision = precision_score(y_test, rand_for_pred_44)
 
 axes[1].set_xlabel(
-    f"Recall: {recall:.3f}  |  Accuracy: {accuracy:.3f}  |  F1: {f1:.3f}"
+    f"Recall: {recall:.3f}  |  Accuracy: {accuracy:.3f}  |  F1: {f1:.3f}  |  Precision: {precision:.3f}"
 )
 
 plt.suptitle("Random Forest: Optimal Threshold @ 0.44")

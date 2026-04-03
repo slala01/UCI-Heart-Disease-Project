@@ -14,3 +14,6 @@ wheels/
 
 # System
 **/.DS_Store
+
+# Outputs
+outputs/models/
