@@ -236,6 +236,8 @@ print("-" * 60)
 for col in X.columns:
     print(f"    - {col}")
 
+feature_names = X.columns.tolist()
+
 # Perform Train/Test split
 print("\n[3.3] Train/Test split raw data 75/25 for Random Forest and XGBoost Models: ")
 X_train_raw, X_test_raw, y_train, y_test = train_test_split(
@@ -557,11 +559,11 @@ for name, (model, X_test_m) in threshold_models.items():
         prec = precision_score(y_test, preds)
         print(f"  {thresh:<12} {recall:<10.3f} {auc:<12.3f} {f1:<10.3f} {accuracy:<10.3f} {prec:<10.3f}")
 
-print("\n[5.3] Optimal Model Threshold: Random Forest @ 0.44 Threshold")
+print("\n[5.3] Optimal Model Threshold: Random Forest @ 0.45 Threshold")
 
-rand_for_pred_44 = (rand_for_prob >= 0.44).astype(int)
+rand_for_pred_45 = (rand_for_prob >= 0.45).astype(int)
 
-# ROC Curve for Random Forest at 0.44 Threshold
+# ROC Curve for Random Forest at 0.45 Threshold
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
 fpr, tpr, thresholds_roc = roc_curve(y_test, rand_for_prob)
@@ -569,37 +571,117 @@ auc_score = roc_auc_score(y_test, rand_for_prob)
 
 axes[0].plot(fpr, tpr, color="purple", lw=2,
               label=f"Random Forest (AUC = {auc_score:.3f})")
-axes[0].scatter(fpr[np.argmin(np.abs(thresholds_roc - 0.44))],
-                 tpr[np.argmin(np.abs(thresholds_roc - 0.44))],
+axes[0].scatter(fpr[np.argmin(np.abs(thresholds_roc - 0.45))],
+                 tpr[np.argmin(np.abs(thresholds_roc - 0.45))],
                  color="black", zorder=5, s=100,
-                 label="Threshold = 0.44")
+                 label="Threshold = 0.45")
 axes[0].plot([0, 1], [0, 1], "k--", alpha=0.5, label="Random Classifier")
-axes[0].set_title("ROC Curve: Random Forest @ 0.44 Threshold")
+axes[0].set_title("ROC Curve: Random Forest @ 0.45 Threshold")
 axes[0].set_xlabel("False Positive Rate")
 axes[0].set_ylabel("True Positive Rate")
 axes[0].legend(loc="lower right")
 axes[0].grid(alpha=0.3)
 
-# Confusion Matrix for Random Forest at 0.44 Threshold
-cm   = confusion_matrix(y_test, rand_for_pred_44)
+# Confusion Matrix for Random Forest at 0.45 Threshold
+cm   = confusion_matrix(y_test, rand_for_pred_45)
 disp = ConfusionMatrixDisplay(confusion_matrix=cm,
                                display_labels=["No Disease", "Disease"])
 disp.plot(ax=axes[1], colorbar=False, cmap="Blues")
-axes[1].set_title("Confusion Matrix: Random Forest @ 0.44 Threshold")
+axes[1].set_title("Confusion Matrix: Random Forest @ 0.45 Threshold")
 
-# Performance Metrics for Random Forest at 0.44 Threshold
-recall   = recall_score(y_test, rand_for_pred_44)
-accuracy = accuracy_score(y_test, rand_for_pred_44)
-f1       = f1_score(y_test, rand_for_pred_44)
-precision = precision_score(y_test, rand_for_pred_44)
+# Performance Metrics for Random Forest at 0.45 Threshold
+recall   = recall_score(y_test, rand_for_pred_45)
+accuracy = accuracy_score(y_test, rand_for_pred_45)
+f1       = f1_score(y_test, rand_for_pred_45)
+precision = precision_score(y_test, rand_for_pred_45)
 
 axes[1].set_xlabel(
     f"Recall: {recall:.3f}  |  Accuracy: {accuracy:.3f}  |  F1: {f1:.3f}  |  Precision: {precision:.3f}"
 )
 
-plt.suptitle("Random Forest: Optimal Threshold @ 0.44")
+plt.suptitle("Random Forest: Optimal Threshold @ 0.45")
 plt.tight_layout()
 plt.savefig(f"{PLOTS_DIR}/08_random_forest_optimal_threshold.png",
              dpi=150, bbox_inches="tight")
 plt.close()
 print("Saving ROC Curve and Confusion Matrix plot as 08_random_forest_optimal_threshold.png..... Complete ✓")
+
+# =============================================================================
+# 6. SHAP Feature Importance
+# =============================================================================
+
+print("=" * 60)
+print("6. SHAP Feature Importance")
+print("=" * 60)
+
+# --- [6.1] Compute SHAP Values ---
+print("\n[6.1] Computing SHAP values for Random Forest...")
+
+explainer   = shap.TreeExplainer(rand_for_model)
+shap_values = explainer.shap_values(X_test_raw)
+
+# Handle different shap_values structures
+if isinstance(shap_values, list):
+    shap_vals_disease = shap_values[1]       # old SHAP — list of arrays
+elif shap_values.ndim == 3:
+    shap_vals_disease = shap_values[:, :, 1] # new SHAP — 3D array, slice disease class
+else:
+    shap_vals_disease = shap_values          # already 2D
+
+print(f"  shap_vals_disease shape : {shap_vals_disease.shape}")
+print(f"  Test set shape          : {X_test_raw.shape}")
+print(f"  Feature names length    : {len(feature_names)}")
+
+# --- [6.2] SHAP Feature Importance Table ---
+print("\n[6.2] SHAP Feature Importance Rankings:")
+print("-" * 60)
+
+mean_shap_vals = np.abs(shap_vals_disease).mean(axis=0)
+
+# Debug
+print(f"  mean_shap_vals shape : {mean_shap_vals.shape}")
+print(f"  feature_names length : {len(feature_names)}")
+
+shap_importance = pd.DataFrame({
+    "Feature"     : feature_names,
+    "Mean |SHAP|" : mean_shap_vals
+})
+
+shap_importance = shap_importance.sort_values("Mean |SHAP|",
+                                               ascending=False)
+shap_importance = shap_importance.reset_index(drop=True)
+shap_importance.index += 1
+
+print(shap_importance.to_string())
+
+shap_importance.to_csv(f"{OUTPUT_DIR}/shap_importance.csv")
+print(f"\n  Saved: shap_importance.csv")
+
+# --- [6.3] SHAP Feature Importance Bar Plot ---
+print("\n[6.3] Plotting SHAP Feature Importance...")
+
+top_n     = 15
+top_shap  = shap_importance.head(top_n)
+top_feats = top_shap["Feature"].values
+top_vals  = top_shap["Mean |SHAP|"].values
+
+fig, ax = plt.subplots(figsize=(10, 7))
+
+bars = ax.barh(top_feats[::-1], top_vals[::-1],
+                color="purple", edgecolor="black", alpha=0.8)
+
+ax.set_xlabel("Mean |SHAP Value|")
+ax.set_title(f"SHAP Feature Importance — Random Forest (Top {top_n})",
+              fontweight="bold", fontsize=13)
+ax.grid(axis="x", alpha=0.3)
+
+for bar, val in zip(bars, top_vals[::-1]):
+    ax.text(bar.get_width() + 0.001,
+             bar.get_y() + bar.get_height() / 2,
+             f"{val:.4f}", va="center", fontsize=9)
+
+plt.tight_layout()
+plt.savefig(f"{PLOTS_DIR}/09_shap_importance.png",
+             dpi=150, bbox_inches="tight")
+plt.close()
+print(f"\n  Saved: 09_shap_importance.png")
