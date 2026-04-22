@@ -1,0 +1,194 @@
+2026-04-22 11:19:50 | INFO     | ============================================================
+2026-04-22 11:19:50 | INFO     | UCI Heart Disease — Classification Pipeline
+2026-04-22 11:19:50 | INFO     | ============================================================
+2026-04-22 11:19:50 | INFO     | Random state : 67
+2026-04-22 11:19:50 | INFO     | Output dir   : outputs
+2026-04-22 11:19:50 | INFO     | ============================================================
+2026-04-22 11:19:50 | INFO     | STEP 1 — Load Data
+2026-04-22 11:19:50 | INFO     | ============================================================
+2026-04-22 11:19:50 | INFO     | Dataset loaded      : heart-statlog-uci
+2026-04-22 11:19:50 | INFO     | Shape               : 270 rows x 14 columns
+2026-04-22 11:19:50 | DEBUG    | First 5 rows:
+    age  sex  chest  resting_blood_pressure  serum_cholestoral  fasting_blood_sugar  resting_electrocardiographic_results  maximum_heart_rate_achieved  exercise_induced_angina  oldpeak  slope  number_of_major_vessels  thal   target
+0  70.0  1.0    4.0                   130.0              322.0                  0.0                                   2.0                        109.0                      0.0      2.4    2.0                      3.0   3.0  present
+1  67.0  0.0    3.0                   115.0              564.0                  0.0                                   2.0                        160.0                      0.0      1.6    2.0                      0.0   7.0   absent
+2  57.0  1.0    2.0                   124.0              261.0                  0.0                                   0.0                        141.0                      0.0      0.3    1.0                      0.0   7.0  present
+3  64.0  1.0    4.0                   128.0              263.0                  0.0                                   0.0                        105.0                      1.0      0.2    2.0                      1.0   7.0   absent
+4  74.0  0.0    2.0                   120.0              269.0                  0.0                                   2.0                        121.0                      1.0      0.2    1.0                      1.0   3.0   absent
+2026-04-22 11:19:50 | DEBUG    | Descriptive stats:
+              age         sex       chest  resting_blood_pressure  serum_cholestoral  fasting_blood_sugar  resting_electrocardiographic_results  maximum_heart_rate_achieved  exercise_induced_angina    oldpeak       slope  number_of_major_vessels        thal
+count  270.000000  270.000000  270.000000              270.000000         270.000000           270.000000                            270.000000                   270.000000               270.000000  270.00000  270.000000               270.000000  270.000000
+mean    54.433333    0.677778    3.174074              131.344444         249.659259             0.148148                              1.022222                   149.677778                 0.329630    1.05000    1.585185                 0.670370    4.696296
+std      9.109067    0.468195    0.950090               17.861608          51.686237             0.355906                              0.997891                    23.165717                 0.470952    1.14521    0.614390                 0.943896    1.940659
+min     29.000000    0.000000    1.000000               94.000000         126.000000             0.000000                              0.000000                    71.000000                 0.000000    0.00000    1.000000                 0.000000    3.000000
+25%     48.000000    0.000000    3.000000              120.000000         213.000000             0.000000                              0.000000                   133.000000                 0.000000    0.00000    1.000000                 0.000000    3.000000
+50%     55.000000    1.000000    3.000000              130.000000         245.000000             0.000000                              2.000000                   153.500000                 0.000000    0.80000    2.000000                 0.000000    3.000000
+75%     61.000000    1.000000    4.000000              140.000000         280.000000             0.000000                              2.000000                   166.000000                 1.000000    1.60000    2.000000                 1.000000    7.000000
+max     77.000000    1.000000    4.000000              200.000000         564.000000             1.000000                              2.000000                   202.000000                 1.000000    6.20000    3.000000                 3.000000    7.000000
+2026-04-22 11:19:50 | INFO     | Missing values      : None
+2026-04-22 11:19:50 | INFO     | Target recoded      : 'present' → 1, else → 0
+2026-04-22 11:19:50 | INFO     | ============================================================
+2026-04-22 11:19:50 | INFO     | STEP 2 — EDA & Visualization
+2026-04-22 11:19:50 | INFO     | ============================================================
+2026-04-22 11:19:51 | INFO     | Saved: Target distribution
+2026-04-22 11:19:51 | INFO     | Saved: Numerical distributions
+2026-04-22 11:19:51 | INFO     | Saved: Categorical counts
+2026-04-22 11:19:52 | INFO     | Saved: Correlation heatmap
+2026-04-22 11:19:52 | INFO     | ============================================================
+2026-04-22 11:19:52 | INFO     | STEP 3 — Feature Engineering
+2026-04-22 11:19:52 | INFO     | ============================================================
+2026-04-22 11:19:52 | INFO     | OHE applied to     : ['sex', 'chest', 'fasting_blood_sugar', 'resting_electrocardiographic_results', 'exercise_induced_angina', 'slope', 'thal']
+2026-04-22 11:19:52 | INFO     | Shape after OHE    : (270, 26)
+2026-04-22 11:19:52 | DEBUG    | Features (25 total):
+  age
+  resting_blood_pressure
+  serum_cholestoral
+  maximum_heart_rate_achieved
+  oldpeak
+  number_of_major_vessels
+  sex_0.0
+  sex_1.0
+  chest_1.0
+  chest_2.0
+  chest_3.0
+  chest_4.0
+  fasting_blood_sugar_0.0
+  fasting_blood_sugar_1.0
+  resting_electrocardiographic_results_0.0
+  resting_electrocardiographic_results_1.0
+  resting_electrocardiographic_results_2.0
+  exercise_induced_angina_0.0
+  exercise_induced_angina_1.0
+  slope_1.0
+  slope_2.0
+  slope_3.0
+  thal_3.0
+  thal_6.0
+  thal_7.0
+2026-04-22 11:19:52 | INFO     | Train shape        : (202, 25)
+2026-04-22 11:19:52 | INFO     | Test shape         : (68, 25)
+2026-04-22 11:19:52 | INFO     | ============================================================
+2026-04-22 11:19:52 | INFO     | STEP 4 — Model Training
+2026-04-22 11:19:52 | INFO     | ============================================================
+2026-04-22 11:19:52 | INFO     | Fitting: Logistic Regression ...
+2026-04-22 11:19:54 | INFO     |   Best params : {'model__C': 0.1, 'model__penalty': 'l2', 'model__solver': 'liblinear'}
+2026-04-22 11:19:54 | INFO     |   CV AUC      : 0.9082  (2.1s)
+2026-04-22 11:19:54 | DEBUG    |   Saved       : outputs/models/logistic_regression.pkl
+2026-04-22 11:19:54 | INFO     |   Test metrics: {'AUC-ROC': 0.9237, 'Accuracy': 0.8824, 'Recall': 0.7667, 'F1 Score': 0.8519, 'Precision': 0.9583}
+2026-04-22 11:19:54 | INFO     | Fitting: SVM ...
+2026-04-22 11:19:54 | INFO     |   Best params : {'model__C': 10, 'model__gamma': 0.0001, 'model__kernel': 'rbf'}
+2026-04-22 11:19:54 | INFO     |   CV AUC      : 0.9024  (0.2s)
+2026-04-22 11:19:54 | DEBUG    |   Saved       : outputs/models/svm.pkl
+2026-04-22 11:19:54 | INFO     |   Test metrics: {'AUC-ROC': 0.936, 'Accuracy': 0.8676, 'Recall': 0.8, 'F1 Score': 0.8421, 'Precision': 0.8889}
+2026-04-22 11:19:54 | INFO     | Fitting: Random Forest ...
+2026-04-22 11:20:16 | INFO     |   Best params : {'max_depth': 7, 'max_features': 'log2', 'min_samples_leaf': 3, 'min_samples_split': 20, 'n_estimators': 500}
+2026-04-22 11:20:16 | INFO     |   CV AUC      : 0.8939  (22.5s)
+2026-04-22 11:20:17 | DEBUG    |   Saved       : outputs/models/random_forest.pkl
+2026-04-22 11:20:17 | INFO     |   Test metrics: {'AUC-ROC': 0.9289, 'Accuracy': 0.8824, 'Recall': 0.8, 'F1 Score': 0.8571, 'Precision': 0.9231}
+2026-04-22 11:20:17 | INFO     | Fitting: XGBoost ...
+2026-04-22 11:20:21 | INFO     |   Best params : {'colsample_bytree': 0.6, 'learning_rate': 0.1, 'max_depth': 2, 'n_estimators': 100, 'reg_alpha': 0, 'reg_lambda': 1.0, 'subsample': 0.8}
+2026-04-22 11:20:21 | INFO     |   CV AUC      : 0.9002  (4.1s)
+2026-04-22 11:20:21 | DEBUG    |   Saved       : outputs/models/xgboost.pkl
+2026-04-22 11:20:21 | INFO     |   Test metrics: {'AUC-ROC': 0.9184, 'Accuracy': 0.8529, 'Recall': 0.8, 'F1 Score': 0.8276, 'Precision': 0.8571}
+2026-04-22 11:20:21 | INFO     | Performance summary:
+                     AUC-ROC  Accuracy  Recall  F1 Score  Precision
+Logistic Regression   0.9237    0.8824  0.7667    0.8519     0.9583
+SVM                   0.9360    0.8676  0.8000    0.8421     0.8889
+Random Forest         0.9289    0.8824  0.8000    0.8571     0.9231
+XGBoost               0.9184    0.8529  0.8000    0.8276     0.8571
+2026-04-22 11:20:21 | INFO     | ============================================================
+2026-04-22 11:20:21 | INFO     | STEP 5 — Model Diagnostics
+2026-04-22 11:20:21 | INFO     | ============================================================
+2026-04-22 11:20:21 | INFO     | Train vs Test AUC Gap:
+                     Train AUC  Test AUC     Gap
+Logistic Regression     0.9348    0.9237  0.0111
+SVM                     0.9167    0.9360 -0.0193
+Random Forest           0.9594    0.9289  0.0305
+XGBoost                 0.9829    0.9184  0.0645
+2026-04-22 11:20:21 | INFO     | Threshold sweep — Logistic Regression:
+ Threshold  Recall  AUC-ROC    F1  Accuracy  Precision
+      0.49   0.767    0.924 0.852     0.882      0.958
+      0.48   0.767    0.924 0.836     0.868      0.920
+      0.47   0.767    0.924 0.836     0.868      0.920
+      0.46   0.767    0.924 0.836     0.868      0.920
+      0.45   0.767    0.924 0.836     0.868      0.920
+      0.44   0.767    0.924 0.821     0.853      0.885
+      0.43   0.767    0.924 0.821     0.853      0.885
+      0.42   0.767    0.924 0.807     0.838      0.852
+      0.41   0.767    0.924 0.807     0.838      0.852
+      0.40   0.800    0.924 0.828     0.853      0.857
+2026-04-22 11:20:21 | INFO     | Threshold sweep — SVM:
+ Threshold  Recall  AUC-ROC    F1  Accuracy  Precision
+      0.49   0.833    0.936 0.862     0.882      0.893
+      0.48   0.833    0.936 0.862     0.882      0.893
+      0.47   0.833    0.936 0.862     0.882      0.893
+      0.46   0.833    0.936 0.862     0.882      0.893
+      0.45   0.833    0.936 0.862     0.882      0.893
+      0.44   0.833    0.936 0.862     0.882      0.893
+      0.43   0.833    0.936 0.862     0.882      0.893
+      0.42   0.833    0.936 0.862     0.882      0.893
+      0.41   0.833    0.936 0.862     0.882      0.893
+      0.40   0.833    0.936 0.862     0.882      0.893
+2026-04-22 11:20:21 | INFO     | Threshold sweep — Random Forest:
+ Threshold  Recall  AUC-ROC    F1  Accuracy  Precision
+      0.49   0.800    0.929 0.857     0.882      0.923
+      0.48   0.800    0.929 0.857     0.882      0.923
+      0.47   0.800    0.929 0.857     0.882      0.923
+      0.46   0.800    0.929 0.828     0.853      0.857
+      0.45   0.867    0.929 0.867     0.882      0.867
+      0.44   0.867    0.929 0.867     0.882      0.867
+      0.43   0.867    0.929 0.839     0.853      0.812
+      0.42   0.867    0.929 0.839     0.853      0.812
+      0.41   0.867    0.929 0.825     0.838      0.788
+      0.40   0.867    0.929 0.825     0.838      0.788
+2026-04-22 11:20:21 | INFO     | Threshold sweep — XGBoost:
+ Threshold  Recall  AUC-ROC    F1  Accuracy  Precision
+      0.49     0.8    0.918 0.828     0.853      0.857
+      0.48     0.8    0.918 0.828     0.853      0.857
+      0.47     0.8    0.918 0.828     0.853      0.857
+      0.46     0.8    0.918 0.828     0.853      0.857
+      0.45     0.8    0.918 0.828     0.853      0.857
+      0.44     0.8    0.918 0.828     0.853      0.857
+      0.43     0.8    0.918 0.828     0.853      0.857
+      0.42     0.8    0.918 0.828     0.853      0.857
+      0.41     0.8    0.918 0.814     0.838      0.828
+      0.40     0.8    0.918 0.814     0.838      0.828
+2026-04-22 11:20:21 | INFO     | Optimal model       : Random Forest @ threshold 0.45
+2026-04-22 11:20:21 | INFO     | Saved: 08_optimal_threshold.png
+2026-04-22 11:20:21 | INFO     | ============================================================
+2026-04-22 11:20:21 | INFO     | STEP 6 — SHAP Feature Importance
+2026-04-22 11:20:21 | INFO     | ============================================================
+2026-04-22 11:20:21 | INFO     | Computing SHAP values for: Random Forest
+2026-04-22 11:20:21 | DEBUG    | shap_vals shape : (68, 25)
+2026-04-22 11:20:21 | INFO     | SHAP Feature Rankings:
+                                     Feature  Mean |SHAP|
+1                                  chest_4.0     0.081204
+2                                   thal_3.0     0.061374
+3                    number_of_major_vessels     0.053255
+4                                   thal_7.0     0.050318
+5                                    oldpeak     0.030781
+6                maximum_heart_rate_achieved     0.023949
+7                                        age     0.020650
+8                exercise_induced_angina_1.0     0.019223
+9                                  slope_1.0     0.018358
+10               exercise_induced_angina_0.0     0.018262
+11                                 chest_3.0     0.017831
+12                                   sex_1.0     0.014862
+13                                   sex_0.0     0.014263
+14                                 slope_2.0     0.012326
+15                         serum_cholestoral     0.010428
+16  resting_electrocardiographic_results_0.0     0.010219
+17  resting_electrocardiographic_results_2.0     0.009114
+18                    resting_blood_pressure     0.007623
+19                                 chest_2.0     0.007429
+20                                 chest_1.0     0.000961
+21                                  thal_6.0     0.000457
+22                   fasting_blood_sugar_1.0     0.000328
+23                                 slope_3.0     0.000256
+24                   fasting_blood_sugar_0.0     0.000224
+25  resting_electrocardiographic_results_1.0     0.000000
+2026-04-22 11:20:21 | INFO     | Saved: shap_importance.csv
+2026-04-22 11:20:22 | INFO     | Saved: 09_shap_importance.png
+2026-04-22 11:20:22 | INFO     | ============================================================
+2026-04-22 11:20:22 | INFO     | Pipeline complete. All outputs saved to: outputs
+2026-04-22 11:20:22 | INFO     | ============================================================
