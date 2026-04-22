@@ -2,11 +2,8 @@
 # UCI Heart Disease --- Classification Project
 # =============================================================================
 
-print("=" * 60)
-print("UCI Heart Disease Data - Classification Project")
-print("=" * 60)
-
 # Imports
+import logging
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -31,6 +28,14 @@ from tqdm import tqdm
 import joblib
 
 warnings.filterwarnings("ignore")
+
+# Logging setup
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(message)s",
+    datefmt="%H:%M:%S"
+)
+logger = logging.getLogger(__name__)
 
 # File Configurations
 RANDOM_STATE = 67
@@ -64,7 +69,7 @@ def save_plot(fig, filename):
     path = os.path.join(PLOTS_DIR, filename)
     fig.savefig(path, dpi=150, bbox_inches="tight")
     plt.close(fig)
-    print(f"  Saved: {filename}..... Complete ✓")
+    logger.info("  Saving: %s..... Complete ✓", filename)
 
 
 def save_model(model, model_name):
@@ -72,7 +77,7 @@ def save_model(model, model_name):
     filename = model_name.lower().replace(" ", "_") + ".pkl"
     filepath = os.path.join(MODELS_DIR, filename)
     joblib.dump(model, filepath)
-    print(f"  Model saved → {filepath}")
+    logger.info("  Model saved → %s", filepath)
 
 
 def evaluate_model(model, X_test, y_test, threshold=0.5):
@@ -87,11 +92,11 @@ def evaluate_model(model, X_test, y_test, threshold=0.5):
         "Precision" : round(precision_score(y_test, pred), 4),
     }
 
-# =============================================================================
-# 1. Import Data and Inspect
-# =============================================================================
-
 def main():
+
+    # =============================================================================
+    # 1. Import Data and Inspect
+    # =============================================================================
 
     print("=" * 60)
     print("1. Import Data and Inspect")
@@ -109,27 +114,25 @@ def main():
     df["target"] = y
 
     # Dataset checks
-    print(f"\n[1.1] Dataset loaded: {dataset.details['name']}")
-    print(f"\n[1.2] Dataset shape: {df.shape[0]} rows x {df.shape[1]} columns")
-    print("\n[1.3] First 5 rows of dataset:")
-    print("-" * 60)
-    print(df.head())
-    print("\n[1.4] Descriptive Statistics:")
-    print("-" * 60)
-    print(df.describe())
-    print(f"\n[1.5] Missing Values:")
-    print("-" * 60)
+    logger.info("[1.1] Dataset loaded: %s", dataset.details["name"])
+    logger.info("[1.2] Dataset shape: %d rows x %d columns", df.shape[0], df.shape[1])
+    logger.info("[1.3] First 5 rows of dataset:")
+    logger.info("\n%s", df.head().to_string())
+    logger.info("[1.4] Descriptive Statistics:")
+    logger.info("\n%s", df.describe().to_string())
+    logger.info("[1.5] Missing Values:")
+
     missing     = df.isnull().sum()
     missing_pct = (df.isnull().sum() / len(df) * 100).round(2)
     missing_df  = pd.DataFrame({"Missing Count": missing, "Missing %": missing_pct})
     if missing_df["Missing Count"].sum() == 0:
-        print("No missing values!")
+        logger.info("  No missing values!")
     else:
-        print(missing_df[missing_df["Missing Count"] > 0])
+        logger.warning("  Missing values detected:\n%s", missing_df[missing_df["Missing Count"] > 0].to_string())
 
     # Recode target variable to binary
     df["target"] = df["target"].apply(lambda x: 1 if x == "present" else 0)
-    print("\n")
+    logger.info("[1.6] Target recoded: 'present' → 1, absent → 0")
 
     # =============================================================================
     # 2. EDA & Visualization
@@ -245,25 +248,25 @@ def main():
     df_engin = df.copy()
 
     # One Hot Encoding for categorical features
-    print("\n[3.1] One Hot Encoding categorical features...")
+    logger.info("[3.1] One Hot Encoding categorical features...")
     df_engin = pd.get_dummies(df_engin, columns=CATEGORICAL_COLS, dtype=int, drop_first=False)
-    print(f"  Encoded columns      : {CATEGORICAL_COLS}")
-    print(f"  Shape after encoding : {df_engin.shape}")
+    logger.info("  Encoded columns      : %s", CATEGORICAL_COLS)
+    logger.info("  Shape after encoding : %s", df_engin.shape)
 
     # Final Feature List
     X = df_engin.drop(columns=["target"])
     y = df_engin["target"]
     feature_names = X.columns.tolist()
 
-    print(f"\n[3.2] Total features: {len(feature_names)}")
+    logger.info("[3.2] Total features: %d", len(feature_names))
 
     # Train/Test split
-    print("\n[3.3] Train/Test split 75/25 (stratified):")
+    logger.info("[3.3] Train/Test split 75/25 (stratified):")
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.25, random_state=RANDOM_STATE, stratify=y
     )
-    print(f"  X_train shape : {X_train.shape}")
-    print(f"  X_test  shape : {X_test.shape}")
+    logger.info("  X_train shape : %s", X_train.shape)
+    logger.info("  X_test  shape : %s", X_test.shape)
 
     # =============================================================================
     # 4. Modeling and Performance Metrics
@@ -332,7 +335,7 @@ def main():
     results  = {}
 
     for name, (estimator, param_grid) in tqdm(registry.items(), desc="Training models", unit="model"):
-        print(f"\n  Fitting: {name}...")
+        logger.info("  Fitting: %s...", name)
 
         grid = GridSearchCV(
             estimator,
@@ -361,9 +364,8 @@ def main():
          for name, res in results.items()}
     ).T
 
-    print("\n[4.5] Performance Metrics:")
-    print("-" * 60)
-    print(results_df.to_string())
+    logger.info("[4.5] Performance Metrics:")
+    logger.info("\n%s", results_df.to_string())
 
     # Model comparison plot
     def _plot_model_comparison(results_df):
@@ -432,8 +434,7 @@ def main():
     print("=" * 60)
 
     # Train vs Test AUC Gap
-    print("\n[5.1] Train vs Test AUC Gap:")
-    print("-" * 60)
+    logger.info("[5.1] Train vs Test AUC Gap:")
 
     diagnostics = {}
     for name, res in results.items():
@@ -444,29 +445,63 @@ def main():
             "Test AUC"  : round(test_auc, 4),
             "Gap"       : round(train_auc - test_auc, 4),
         }
-    print(pd.DataFrame(diagnostics).T.to_string())
+    logger.info("\n%s", pd.DataFrame(diagnostics).T.to_string())
 
     # Threshold sweep
-    print("\n[5.2] Adjusted Threshold Check:")
-    print("-" * 60)
+    logger.info("[5.2] Adjusted Threshold Check:")
 
     thresholds = [0.49, 0.48, 0.47, 0.46, 0.45, 0.44, 0.43, 0.42, 0.41, 0.40]
 
     for name, res in tqdm(results.items(), desc="Threshold sweep", unit="model"):
-        print(f"\n  {name}:")
-        print(f"  {'Threshold':<12} {'Recall':<10} {'AUC-ROC':<12} {'F1':<10} {'Accuracy':<10} {'Precision':<10}")
-        print(f"  {'-' * 60}")
+        logger.info("  %s:", name)
+        logger.info("  %-12s %-10s %-12s %-10s %-10s %-10s",
+                    "Threshold", "Recall", "AUC-ROC", "F1", "Accuracy", "Precision")
         for thresh in thresholds:
             preds = (res["prob"] >= thresh).astype(int)
-            print(
-                f"  {thresh:<12} "
-                f"{recall_score(y_test, preds):<10.3f} "
-                f"{roc_auc_score(y_test, res['prob']):<12.3f} "
-                f"{f1_score(y_test, preds):<10.3f} "
-                f"{accuracy_score(y_test, preds):<10.3f} "
-                f"{precision_score(y_test, preds):<10.3f}"
-            )
+            logger.info("  %-12s %-10.3f %-12.3f %-10.3f %-10.3f %-10.3f",
+                        thresh,
+                        recall_score(y_test, preds),
+                        roc_auc_score(y_test, res["prob"]),
+                        f1_score(y_test, preds),
+                        accuracy_score(y_test, preds),
+                        precision_score(y_test, preds))
 
+    # Find optimal threshold where all metrics >= 0.85 for each model
+    optimal_thresholds = {}
+
+    for model_name, res in results.items():
+        prob           = res["prob"]
+        optimal_thresh = None
+
+        for thresh in thresholds:
+            preds   = (prob >= thresh).astype(int)
+            metrics = {
+                "Recall"    : recall_score(y_test, preds),
+                "Accuracy"  : accuracy_score(y_test, preds),
+                "F1"        : f1_score(y_test, preds),
+                "Precision" : precision_score(y_test, preds),
+            }
+            if all(v >= 0.85 for v in metrics.values()):
+                optimal_thresh = thresh
+                logger.info("  %s — Threshold %.2f meets all criteria:", model_name, thresh)
+                for metric, val in metrics.items():
+                    logger.info("    %-12s : %.3f", metric, val)
+                break
+
+        if optimal_thresh is None:
+            logger.warning("  %s — No threshold achieved all metrics >= 0.85", model_name)
+
+        optimal_thresholds[model_name] = optimal_thresh
+
+    # Pick the best model — first one that found a qualifying threshold, else highest AUC
+    best_model = next(
+        (name for name, thresh in optimal_thresholds.items() if thresh is not None),
+        max(results, key=lambda name: results[name]["AUC-ROC"])
+    )
+    best_thresh = optimal_thresholds[best_model] or 0.45
+
+    logger.info("[5.3] Optimal Model: %s @ %.2f Threshold", best_model, best_thresh)
+    
     # Optimal threshold plot
     def _plot_optimal_threshold(results, y_test, model_name="Random Forest", threshold=0.45):
         prob     = results[model_name]["prob"]
@@ -505,9 +540,12 @@ def main():
         plt.tight_layout()
         return fig
 
-    print("\n[5.3] Optimal Model: Random Forest @ 0.45 Threshold")
     fig = _plot_optimal_threshold(results, y_test, model_name="Random Forest", threshold=0.45)
     save_plot(fig, "08_random_forest_optimal_threshold.png")
+
+    logger.info("=" * 60)
+    logger.info("Pipeline complete. All outputs saved to: %s", OUTPUT_DIR)
+    logger.info("=" * 60)
 
 # =============================================================================
 # Entry Point
