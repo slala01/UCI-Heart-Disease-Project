@@ -13,11 +13,7 @@ import os
 from sklearn import datasets
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import (
-    accuracy_score, recall_score, roc_auc_score, f1_score,
-    confusion_matrix, ConfusionMatrixDisplay, roc_curve,
-    RocCurveDisplay, precision_score
-)
+from sklearn.metrics import (accuracy_score, recall_score, roc_auc_score, f1_score, confusion_matrix, ConfusionMatrixDisplay, roc_curve, RocCurveDisplay, precision_score)
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
@@ -33,8 +29,7 @@ warnings.filterwarnings("ignore")
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(message)s",
-    datefmt="%H:%M:%S"
-)
+    datefmt="%H:%M:%S")
 logger = logging.getLogger(__name__)
 
 # File Configurations
@@ -48,16 +43,14 @@ os.makedirs(MODELS_DIR, exist_ok=True)
 # Column definitions
 NUMERICAL_COLS = [
     "age", "resting_blood_pressure", "serum_cholestoral",
-    "maximum_heart_rate_achieved", "oldpeak", "number_of_major_vessels"
-]
+    "maximum_heart_rate_achieved", "oldpeak", "number_of_major_vessels"]
 
 CATEGORICAL_COLS = [
     "sex", "chest", "fasting_blood_sugar",
     "resting_electrocardiographic_results",
-    "exercise_induced_angina", "slope", "thal"
-]
+    "exercise_induced_angina", "slope", "thal"]
 
-# Model colors (order matches MODEL_REGISTRY below)
+# Model colors
 MODEL_COLORS = ["green", "blue", "purple", "red"]
 
 # =============================================================================
@@ -89,8 +82,7 @@ def evaluate_model(model, X_test, y_test, threshold=0.5):
         "Accuracy"  : round(accuracy_score(y_test, pred), 4),
         "Recall"    : round(recall_score(y_test, pred), 4),
         "F1 Score"  : round(f1_score(y_test, pred), 4),
-        "Precision" : round(precision_score(y_test, pred), 4),
-    }
+        "Precision" : round(precision_score(y_test, pred), 4)}
 
 def main():
 
@@ -230,8 +222,7 @@ def main():
         ("01_target_distribution.png",    _plot_target_distribution),
         ("02_numerical_distributions.png", _plot_numerical_distributions),
         ("03_categorical_counts.png",      _plot_categorical_counts),
-        ("04_correlation_plot.png",        _plot_correlation),
-    ]
+        ("04_correlation_plot.png",        _plot_correlation)]
 
     for filename, plot_fn in tqdm(eda_plots, desc="EDA plots", unit="plot"):
         fig = plot_fn(df)
@@ -263,8 +254,7 @@ def main():
     # Train/Test split
     logger.info("[3.3] Train/Test split 75/25 (stratified):")
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.25, random_state=RANDOM_STATE, stratify=y
-    )
+        X, y, test_size=0.25, random_state=RANDOM_STATE, stratify=y)
     logger.info("  X_train shape : %s", X_train.shape)
     logger.info("  X_test  shape : %s", X_test.shape)
 
@@ -342,8 +332,7 @@ def main():
             param_grid=param_grid,
             scoring="roc_auc",
             cv=5,
-            n_jobs=-1
-        )
+            n_jobs=-1)
         grid.fit(X_train, y_train)
         model = grid.best_estimator_
 
@@ -354,8 +343,7 @@ def main():
             "model"  : model,
             "pred"   : model.predict(X_test),
             "prob"   : model.predict_proba(X_test)[:, 1],
-            **metrics
-        }
+            **metrics}
 
     # Performance summary table
     metric_keys = ["AUC-ROC", "Accuracy", "Recall", "F1 Score", "Precision"]
@@ -443,8 +431,7 @@ def main():
         diagnostics[name] = {
             "Train AUC" : round(train_auc, 4),
             "Test AUC"  : round(test_auc, 4),
-            "Gap"       : round(train_auc - test_auc, 4),
-        }
+            "Gap"       : round(train_auc - test_auc, 4)}
     logger.info("\n%s", pd.DataFrame(diagnostics).T.to_string())
 
     # Threshold sweep
@@ -479,8 +466,7 @@ def main():
                 "Recall"    : recall_score(y_test, preds),
                 "Accuracy"  : accuracy_score(y_test, preds),
                 "F1"        : f1_score(y_test, preds),
-                "Precision" : precision_score(y_test, preds),
-            }
+                "Precision" : precision_score(y_test, preds)}
             if all(v >= 0.85 for v in metrics.values()):
                 optimal_thresh = thresh
                 logger.info("  %s — Threshold %.2f meets all criteria:", model_name, thresh)
@@ -496,8 +482,7 @@ def main():
     # Pick the best model — first one that found a qualifying threshold, else highest AUC
     best_model = next(
         (name for name, thresh in optimal_thresholds.items() if thresh is not None),
-        max(results, key=lambda name: results[name]["AUC-ROC"])
-    )
+        max(results, key=lambda name: results[name]["AUC-ROC"]))
     best_thresh = optimal_thresholds[best_model] or 0.45
 
     logger.info("[5.3] Optimal Model: %s @ %.2f Threshold", best_model, best_thresh)
@@ -533,8 +518,7 @@ def main():
             f"Recall: {recall_score(y_test, pred_adj):.3f}  |  "
             f"Accuracy: {accuracy_score(y_test, pred_adj):.3f}  |  "
             f"F1: {f1_score(y_test, pred_adj):.3f}  |  "
-            f"Precision: {precision_score(y_test, pred_adj):.3f}"
-        )
+            f"Precision: {precision_score(y_test, pred_adj):.3f}")
 
         plt.suptitle(f"{model_name}: Optimal Threshold @ {threshold}")
         plt.tight_layout()
