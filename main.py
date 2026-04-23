@@ -90,6 +90,7 @@ def main():
     # 1. Import Data and Inspect
     # =============================================================================
 
+    print( )
     print("=" * 60)
     print("1. Import Data and Inspect")
     print("=" * 60)
@@ -130,6 +131,7 @@ def main():
     # 2. EDA & Visualization
     # =============================================================================
 
+    print( )
     print("=" * 60)
     print("2. EDA & Visualization")
     print("=" * 60)
@@ -199,7 +201,7 @@ def main():
                         width, label="Disease", color="red", edgecolor="black")
             axes[i].set_title(col.replace("_", " ").title())
             axes[i].set_xticks(x)
-            axes[i].set_xticklabels(no_disease.index.astype(int))
+            axes[i].set_xticklabels(no_disease.index)
             axes[i].legend(fontsize=7)
 
         axes[-1].set_visible(False)
@@ -232,6 +234,7 @@ def main():
     # 3. Feature Engineering
     # =============================================================================
 
+    print( )
     print("=" * 60)
     print("3. Feature Engineering")
     print("=" * 60)
@@ -262,6 +265,7 @@ def main():
     # 4. Modeling and Performance Metrics
     # =============================================================================
 
+    print( )
     print("=" * 60)
     print("4. Modeling and Performance Metrics")
     print("=" * 60)
@@ -339,10 +343,11 @@ def main():
         save_model(model, name)
 
         metrics = evaluate_model(model, X_test, y_test)
+        prob    = model.predict_proba(X_test)[:, 1]
         results[name] = {
             "model"  : model,
-            "pred"   : model.predict(X_test),
-            "prob"   : model.predict_proba(X_test)[:, 1],
+            "pred"   : (prob >= 0.5).astype(int),
+            "prob"   : prob,
             **metrics}
 
     # Performance summary table
@@ -357,7 +362,6 @@ def main():
 
     # Model comparison plot
     def _plot_model_comparison(results_df):
-        metric_keys  = ["AUC-ROC", "Accuracy", "Recall", "F1 Score", "Precision"]
         fig, axes    = plt.subplots(2, 3, figsize=(15, 9))
         axes         = axes.flatten()
 
@@ -417,6 +421,7 @@ def main():
     # 5. Model Diagnostics
     # =============================================================================
 
+    print( )
     print("=" * 60)
     print("5. Model Diagnostics")
     print("=" * 60)
@@ -463,6 +468,7 @@ def main():
         for thresh in thresholds:
             preds   = (prob >= thresh).astype(int)
             metrics = {
+                "ACU-ROC"   : roc_auc_score(y_test, prob),
                 "Recall"    : recall_score(y_test, preds),
                 "Accuracy"  : accuracy_score(y_test, preds),
                 "F1"        : f1_score(y_test, preds),
@@ -483,7 +489,7 @@ def main():
     best_model = next(
         (name for name, thresh in optimal_thresholds.items() if thresh is not None),
         max(results, key=lambda name: results[name]["AUC-ROC"]))
-    best_thresh = optimal_thresholds[best_model] or 0.45
+    best_thresh = optimal_thresholds[best_model] if optimal_thresholds[best_model] is not None else 0.45
 
     logger.info("[5.3] Optimal Model: %s @ %.2f Threshold", best_model, best_thresh)
     
@@ -524,7 +530,7 @@ def main():
         plt.tight_layout()
         return fig
 
-    fig = _plot_optimal_threshold(results, y_test, model_name="Random Forest", threshold=0.45)
+    fig = _plot_optimal_threshold(results, y_test, model_name=best_model, threshold=best_thresh)
     save_plot(fig, "08_random_forest_optimal_threshold.png")
 
     logger.info("=" * 60)
