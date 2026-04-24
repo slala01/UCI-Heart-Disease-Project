@@ -129,133 +129,166 @@ def main():
     print("2. EDA & Visualization")
     print("=" * 60)
 
-# Target Variable
-def plot_target_distribution
+    # Target Variable
+    def target_distribution_plot(df):
+        fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+
+        counts = [(df["target"] == 0).sum(), (df["target"] == 1).sum()]
+        labels = ["No Disease", "Disease"]
+        colors = ["green", "red"]
+
+        bars = axes[0].bar(labels, counts, color=colors, edgecolor="black", width=0.5)
+        axes[0].set_title("Heart Disease Distribution (Disease vs No Disease)")
+        axes[0].set_ylabel("Count")
+        axes[0].bar_label(bars, padding=1)
+
+        axes[1].pie(counts, labels=labels, colors=colors,
+                        autopct="%1.1f%%", startangle=90,
+                        wedgeprops={"edgecolor": "black"})
+        axes[1].set_title("Heart Disease Proportion")
+        plt.tight_layout()
+
+        return fig
+
+    # Define Categorical vs Numerical Feature columns
+    numerical_cols = ["age", "resting_blood_pressure", "serum_cholestoral",
+                        "maximum_heart_rate_achieved", "oldpeak",
+                        "number_of_major_vessels"]
+
+    categorical_cols = ["sex", "chest", "fasting_blood_sugar",
+                            "resting_electrocardiographic_results",
+                            "exercise_induced_angina", "slope", "thal"]
+    
+    # Numerical Features
+    def numerical_distribution_plot(df):
+        fig, axes = plt.subplots(2, 3, figsize=(15, 8))
+        axes = axes.flatten()
+
+        for i, col in enumerate(NUMERICAL_COLS):
+            axes[i].hist(df[df["target"] == 0][col], bins=20, alpha=0.5,
+                        color="green", label="No Disease", edgecolor="black")
+            axes[i].hist(df[df["target"] == 1][col], bins=20, alpha=0.5,
+                        color="red", label="Disease", edgecolor="black")
+            ax2 = axes[i].twinx()
+            for target, color in zip([0, 1], ["green", "red"]):
+                vals    = df[df["target"] == target][col].dropna()
+                kde     = gaussian_kde(vals)
+                x_range = np.linspace(vals.min(), vals.max(), 200)
+                ax2.plot(x_range, kde(x_range), color=color, linewidth=2)
+            ax2.set_yticks([])
+            axes[i].set_title(col.replace("_", " ").title())
+            axes[i].set_xlabel("Value")
+            axes[i].set_ylabel("Count")
+            axes[i].legend()
+        plt.suptitle("Distribution of Numerical Features")
+        plt.tight_layout()
+
+        return fig
+    
+    # Categorical Features
+    def categorical_distribution_plot(df):
+        fig, axes = plt.subplots(2, 4, figsize=(18, 8))
+        axes = axes.flatten()
+
+        for i, col in enumerate(CATEGORICAL_COLS):
+            no_disease = df[df["target"] == 0][col].value_counts().sort_index()
+            disease    = df[df["target"] == 1][col].value_counts().sort_index()
+            x          = np.arange(len(no_disease.index))
+            width      = 0.35
+
+            axes[i].bar(x - width / 2, no_disease.values, width,
+                        label="No Disease", color="green", edgecolor="black")
+            axes[i].bar(x + width / 2,
+                        disease.reindex(no_disease.index).fillna(0).values,
+                        width, label="Disease", color="red", edgecolor="black")
+            axes[i].set_title(col.replace("_", " ").title())
+            axes[i].set_xticks(x)
+            axes[i].set_xticklabels(no_disease.index)
+            axes[i].legend(fontsize=7)
+        axes[-1].set_visible(False)
+        plt.suptitle("Categorical Features by Target Class")
+        plt.tight_layout()
+
+        return fig
+    
+    # Correlation Plot
+    def correlation_plot(df):
+        fig, ax = plt.subplots(figsize=(12, 9))
+
+        corr = df.corr(numeric_only=True)
+        mask = np.triu(np.ones_like(corr, dtype=bool))
+        sns.heatmap(corr, mask=mask, annot=True, fmt=".2f", cmap="RdYlGn",
+                    center=0, linewidths=0.5, ax=ax,
+                    annot_kws={"size": 8})
+        ax.set_title("Feature Correlation")
+        plt.tight_layout()
+
+        return fig
+
+    eda_plots = [
+        ("01_target_distribution.png", target_distribution_plot),
+        ("02_numerical_distributions.png", numerical_distribution_plot),
+        ("03_categorical_counts.png", categorical_distribution_plot),
+        ("04_correlation_plot.png", correlation_plot)]
+
+    for filename, plot_fn in tqdm(eda_plots, desc="EDA plots", unit="plot"):
+        fig = plot_fn(df)
+        save_plot(fig, filename)
+
+    # =============================================================================
+    # 3. Feature Engineering
+    # =============================================================================
+
+    print( )
+    print("=" * 60)
+    print("3. Feature Engineering")
+    print("=" * 60)
+
+    df_engin = df.copy()
+
+    # One Hot Encoding for categorical features
+    logger.info("[3.1] One Hot Encoding categorical features...")
+    df_engin = pd.get_dummies(df_engin, columns=categorical_cols, dtype=int, drop_first=False)
+    logger.info("  Encoded columns      : %s", categorical_cols)
+    logger.info("  Shape after encoding : %s", df_engin.shape)
+
+    # Dataset check
+    logger.info("[3.2] Updated Descriptive Statistics:")
+    logger.info("\n%s", df_engin.describe().to_string())
+
+    # Final Feature List
+    X = df_engin.drop(columns=["target"])
+    y = df_engin["target"]
+    feature_names = X.columns.tolist()
+    logger.info("[3.3] Total features: %d", len(feature_names))
+
+    # Train/Test split
+    logger.info("[3.4] Train/Test split 75/25 (stratified):")
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.25, random_state=RANDOM_STATE, stratify=y)
+    logger.info("  X_train shape : %s", X_train.shape)
+    logger.info("  X_test  shape : %s", X_test.shape)
 
 
-# Define Categorical vs Numerical Feature columns
-numerical_cols = ["age", "resting_blood_pressure", "serum_cholestoral",
-                  "maximum_heart_rate_achieved", "oldpeak",
-                  "number_of_major_vessels"]
 
-categorical_cols = ["sex", "chest", "fasting_blood_sugar",
-                    "resting_electrocardiographic_results",
-                    "exercise_induced_angina", "slope", "thal"]
 
-# Feature Variables
 
-# Bar plots
-fig, axes = plt.subplots(2, 3, figsize=(15, 8))
-axes = axes.flatten()
-for i, col in enumerate(numerical_cols):
-    axes[i].hist(df[df["target"] == 0][col], bins=20, alpha=0.5,
-                 color="green", label="No Disease", edgecolor="black")
-    axes[i].hist(df[df["target"] == 1][col], bins=20, alpha=0.5,
-                 color="red", label="Disease", edgecolor="black")
-    # KDE lines
-    ax2 = axes[i].twinx()
-    for target, color in zip([0, 1], ["green", "red"]):
-        vals = df[df["target"] == target][col].dropna()
-        kde = gaussian_kde(vals)
-        x_range = np.linspace(vals.min(), vals.max(), 200)
-        ax2.plot(x_range, kde(x_range), color=color, linewidth=2)
-    ax2.set_ylabel("")
-    ax2.set_yticks([])
-    axes[i].set_title(col.replace("_", " ").title())
-    axes[i].set_xlabel("Value")
-    axes[i].set_ylabel("Count")
-    axes[i].legend()
 
-plt.suptitle("Distribution of Numerical Features")
-plt.tight_layout()
-plt.savefig(f"{PLOTS_DIR}/02_numerical_distributions.png", dpi=150, bbox_inches="tight")
-plt.close()
-print("\n[2.2] Saving Numerical Features Distribution plot as 02_numerical_distributions.png..... Complete ✓")
 
-# Categorical feature variables by Target variable
-fig, axes = plt.subplots(2, 4, figsize=(18, 8))
-axes = axes.flatten()
 
-for i, col in enumerate(categorical_cols):
-    no_disease = df[df["target"] == 0][col].value_counts().sort_index()
-    disease = df[df["target"] == 1][col].value_counts().sort_index()
-    x = np.arange(len(no_disease.index))
-    width = 0.35
-    axes[i].bar(x - width/2, no_disease.values, width,
-                label="No Disease", color="green", edgecolor="black")
-    axes[i].bar(x + width/2, disease.reindex(no_disease.index).fillna(0).values,
-                width, label="Disease", color="red", edgecolor="black")
-    axes[i].set_title(col.replace("_", " ").title())
-    axes[i].set_xticks(x)
-    axes[i].set_xticklabels(no_disease.index.astype(int))
-    axes[i].legend(fontsize=7)
 
-# Hide unused subplot
-axes[-1].set_visible(False)
 
-plt.suptitle("Categorical Features by Target Class")
-plt.tight_layout()
-plt.savefig(f"{PLOTS_DIR}/03_categorical_counts.png", dpi=150, bbox_inches="tight")
-plt.close()
-print("\n[2.3] Saving Categorical Counts plot as 03_categorical_counts.png..... Complete ✓")
 
-# Correlation Plot
-fig, ax = plt.subplots(figsize=(12, 9))
 
-corr = df.corr(numeric_only=True)
-mask = np.triu(np.ones_like(corr, dtype=bool))
-sns.heatmap(corr, mask=mask, annot=True, fmt=".2f", cmap="RdYlGn",
-            center=0, linewidths=0.5, ax=ax,
-            annot_kws={"size": 8})
-ax.set_title("Feature Correlation")
-plt.tight_layout()
-plt.savefig(f"{PLOTS_DIR}/04_correlation_plot.png", dpi=150, bbox_inches="tight")
-plt.close()
-print("\n[2.4] Saving Correlation Plot as 04_correlation_plot.png..... Complete ✓")
 
-# =============================================================================
-# 3. Feature Engineering
-# =============================================================================
 
-print("=" * 60)
-print("3. Feature Engineering")
-print("=" * 60)
 
-df_engin = df.copy()
 
-# One Hot Encoding for categorical features
-print("\n[3.1] One Hot Encoding categorical features...")
 
-df_engin = pd.get_dummies(df_engin,
-                           columns  = categorical_cols,
-                           dtype    = int,
-                           drop_first = False)
 
-print(f"  Encoded columns : {categorical_cols}")
-print(f"  Shape after encoding : {df_engin.shape}")
-print(f"\n  New columns added:")
-for col in df_engin.columns:
-    print(f"    - {col}")
 
-# Final Feature List
-X = df_engin.drop(columns=["target"])
-y = df_engin["target"]
 
-print(f"\n[3.2] Final Feature List: ")
-print("-" * 60)
-for col in X.columns:
-    print(f"    - {col}")
 
-feature_names = X.columns.tolist()
-
-# Perform Train/Test split
-print("\n[3.3] Train/Test split raw data 75/25 for Random Forest and XGBoost Models: ")
-X_train_raw, X_test_raw, y_train, y_test = train_test_split(
-    X, y, test_size=0.25, random_state=RANDOM_STATE, stratify=y
-)
-
-print(f"\n X_train_raw shape : {X_train_raw.shape}")
-print(f" X_test_raw  shape : {X_test_raw.shape}")
 
 # =============================================================================
 # 4. Modeling and Performance Metrics
