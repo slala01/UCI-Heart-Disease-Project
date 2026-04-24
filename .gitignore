@@ -17,3 +17,6 @@ wheels/
 
 # Outputs
 outputs/models/
+
+# Files
+template.py
