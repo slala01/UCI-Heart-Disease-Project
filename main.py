@@ -161,7 +161,7 @@ def main():
         fig, axes = plt.subplots(2, 3, figsize=(15, 8))
         axes = axes.flatten()
 
-        for i, col in enumerate(NUMERICAL_COLS):
+        for i, col in enumerate(numerical_cols):
             axes[i].hist(df[df["target"] == 0][col], bins=20, alpha=0.5,
                         color="green", label="No Disease", edgecolor="black")
             axes[i].hist(df[df["target"] == 1][col], bins=20, alpha=0.5,
@@ -187,7 +187,7 @@ def main():
         fig, axes = plt.subplots(2, 4, figsize=(18, 8))
         axes = axes.flatten()
 
-        for i, col in enumerate(CATEGORICAL_COLS):
+        for i, col in enumerate(categorical_cols):
             no_disease = df[df["target"] == 0][col].value_counts().sort_index()
             disease    = df[df["target"] == 1][col].value_counts().sort_index()
             x          = np.arange(len(no_disease.index))
