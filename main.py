@@ -15,7 +15,7 @@ import warnings
 import os
 from sklearn import datasets
 from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import (StandardScaler, FunctionTransformer)
 from sklearn.metrics import (accuracy_score, recall_score, roc_auc_score, f1_score, confusion_matrix, ConfusionMatrixDisplay, roc_curve, RocCurveDisplay, precision_score)
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
@@ -63,12 +63,11 @@ def save_model(model, model_name):
 def evaluate_model(model, X_test, y_test):
     prob = model.predict_proba(X_test)[:, 1]
     pred = (prob >= 0.5).astype(int)
-    return {
-        "AUC-ROC"   : round(roc_auc_score(y_test, prob), 4),
-        "Accuracy"  : round(accuracy_score(y_test, pred), 4),
-        "Recall"    : round(recall_score(y_test, pred), 4),
-        "F1 Score"  : round(f1_score(y_test, pred), 4),
-        "Precision" : round(precision_score(y_test, pred), 4)}
+    return {"AUC-ROC"   : round(roc_auc_score(y_test, prob), 4),
+            "Accuracy"  : round(accuracy_score(y_test, pred), 4),
+            "Recall"    : round(recall_score(y_test, pred), 4),
+            "F1 Score"  : round(f1_score(y_test, pred), 4),
+            "Precision" : round(precision_score(y_test, pred), 4)}
 
 def main():
 
