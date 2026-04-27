@@ -47,7 +47,6 @@ os.makedirs(MODELS_DIR, exist_ok=True)
 # =============================================================================
 
 def save_plot(fig, filename):
-    """Save a plot to the plots directory and close it."""
     path = os.path.join(PLOTS_DIR, filename)
     fig.savefig(path, dpi=150, bbox_inches="tight")
     plt.close(fig)
@@ -55,7 +54,6 @@ def save_plot(fig, filename):
 
 
 def save_model(model, model_name):
-    """Save a trained model to the models directory."""
     filename = model_name.lower().replace(" ", "_") + ".pkl"
     path = os.path.join(MODELS_DIR, filename)
     joblib.dump(model, path)
@@ -63,7 +61,6 @@ def save_model(model, model_name):
 
 
 def evaluate_model(model, X_test, y_test):
-    """Return a dict of standard classification metrics for one model."""
     prob = model.predict_proba(X_test)[:, 1]
     pred = (prob >= 0.5).astype(int)
     return {
@@ -268,6 +265,46 @@ def main():
         X, y, test_size=0.25, random_state=RANDOM_STATE, stratify=y)
     logger.info("  X_train shape : %s", X_train.shape)
     logger.info("  X_test  shape : %s", X_test.shape)
+
+    # =============================================================================
+    # 4. Modeling and Performance Metrics
+    # =============================================================================
+
+    print( )
+    print("=" * 60)
+    print("4. Modeling and Performance Metrics")
+    print("=" * 60)
+
+    # Model Registry
+    def build_model_registry():
+        log_reg_pipeline = Pipeline([("scaler", StandardScaler()),
+                                     ("model",  LogisticRegression(random_state=RANDOM_STATE, max_iter=1000))])
+
+        svm_pipeline = Pipeline([("scaler", StandardScaler()),
+                                 ("model",  SVC(random_state=RANDOM_STATE, probability=True))])
+
+        return {"Logistic Regression": (log_reg_pipeline, {"model__C": [0.01, 0.1, 1, 10, 100],
+                                                           "model__penalty": ["l1", "l2"],
+                                                           "model__solver": ["liblinear", "saga"]}),
+
+                "SVM": (svm_pipeline, {"model__C": [0.1, 1, 10, 100, 1000],
+                                       "model__gamma": [1, 0.1, 0.01, 0.001, 0.0001],
+                                       "model__kernel": ["rbf"]}),
+            
+                "Random Forest": (RandomForestClassifier(random_state=RANDOM_STATE), {"n_estimators": [100, 300, 500],
+                                                                                      "max_features": ["sqrt", "log2"],
+                                                                                      "max_depth": [3, 5, 7],
+                                                                                      "min_samples_split": [5, 10, 20],
+                                                                                      "min_samples_leaf": [3, 5, 10]}),
+                
+                "XGBoost": (XGBClassifier(random_state=RANDOM_STATE), {"n_estimators": [50, 100, 200],
+                                                                       "learning_rate": [0.01, 0.1],
+                                                                       "max_depth": [2, 3, 4],
+                                                                       "subsample": [0.6, 0.8],
+                                                                       "colsample_bytree": [0.6, 0.8],
+                                                                       "reg_alpha": [0, 0.1],
+                                                                       "reg_lambda": [1.0, 5.0]})}
+
 
 
 
